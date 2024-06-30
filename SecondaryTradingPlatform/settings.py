@@ -37,7 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'UserFeatures.apps.UserfeaturesConfig'
 ]
+
+AUTH_USER_MODEL ='UserFeatures.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,9 +79,16 @@ WSGI_APPLICATION = 'SecondaryTradingPlatform.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': 'SecondaryTradingPlatformDB',
+    'USER': 'SecondaryTradingPlatformDB_owner',
+    'PASSWORD':'hKUCSpF59yns',
+    'HOST': 'ep-little-hat-a52rby5t.us-east-2.aws.neon.tech',
+    'PORT': 5432,
+    'OPTIONS': {
+      'sslmode': 'require',
+    },
+  }
 }
 
 
