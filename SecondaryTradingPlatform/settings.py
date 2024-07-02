@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,8 +30,7 @@ DEBUG = True
 
 
 ALLOWED_HOSTS = ["127.0.0.1", ".vercel.app", ".now.sh"]
-
-
+ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
@@ -79,14 +80,16 @@ WSGI_APPLICATION = 'SecondaryTradingPlatform.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+
+# Replace the DATABASES section of your settings.py with this
 DATABASES = {
-    'default': {
+  'default': {
     'ENGINE': 'django.db.backends.postgresql',
-    'NAME': 'SecondaryTradingPlatformDB',
-    'USER': 'SecondaryTradingPlatformDB_owner',
-    'PASSWORD':'hKUCSpF59yns',
-    'HOST': 'ep-little-hat-a52rby5t.us-east-2.aws.neon.tech',
-    'PORT': 5432,
+    'NAME': getenv('PGDATABASE'),
+    'USER': getenv('PGUSER'),
+    'PASSWORD': getenv('PGPASSWORD'),
+    'HOST': getenv('PGHOST'),
+    'PORT': getenv('PGPORT', 5432),
     'OPTIONS': {
       'sslmode': 'require',
     },
@@ -140,6 +143,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # STATIC_ROOT = BASE_DIR / "staticfiles_build" / "static"
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "ui/static")]
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "ui/staticfiles")
+# STATICFILES_DIRS = [os.path.join(BASE_DIR, "ui/static")]
+# STATIC_URL = "static/"
+# STATIC_ROOT = os.path.join(BASE_DIR, "ui/staticfiles")
+
+STATICFILES_DIRS = os.path.join(BASE_DIR, 'static'),
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static')
