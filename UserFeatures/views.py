@@ -24,7 +24,7 @@ def RegisterAPI(request):
                 #  api integrate , mobile --> email
                 user = models.User.objects.create(
                     mobile=mobile,
-                    email="default9638@gmail.com"
+                    email="default8141@gmail.com"
                 )
                 user_role = models.UserRole.objects.create(
                     user=user,
