@@ -12,8 +12,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,17 +82,18 @@ WSGI_APPLICATION = 'SecondaryTradingPlatform.wsgi.application'
 
 # Replace the DATABASES section of your settings.py with this
 DATABASES = {
-  'default': {
-    'ENGINE': 'django.db.backends.postgresql',
-    'NAME': os.getenv('PGDATABASE'),
-    'USER': os.getenv('PGUSER'),
-    'PASSWORD': os.getenv('PGPASSWORD'),
-    'HOST': os.getenv('PGHOST'),
-    'PORT': os.getenv('PGPORT', 5432),
-    'OPTIONS': {
-      'sslmode': 'require',
-    },
-  }
+  'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+#   {
+    # 'ENGINE': 'django.db.backends.postgresql',
+    # 'NAME': os.getenv('PGDATABASE'),
+    # 'USER': os.getenv('PGUSER'),
+    # 'PASSWORD': os.getenv('PGPASSWORD'),
+    # 'HOST': os.getenv('PGHOST'),
+    # 'PORT': os.getenv('PGPORT', 5432),
+    # 'OPTIONS': {
+    #   'sslmode': 'require',
+    # },
+#   }
 }
 
 
@@ -130,6 +132,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = 'media/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
