@@ -230,10 +230,11 @@ def Credit_FundsAPI(request):
 @csrf_exempt
 def GetDetails(request):
     if request.method == 'GET':
-        # CanBuy
-        invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
-        Buyer = []
-        for invoice in invoices:
+        try:
+            # CanBuy: Invoices with remaining partitions available for purchase
+            invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
+            buyer_list = []
+            for invoice in invoices:
                 invoice_data = {
                     'id': invoice.id,
                     'no_of_partitions': invoice.no_of_partitions,
@@ -242,42 +243,49 @@ def GetDetails(request):
                     'post_time': invoice.post_time,
                     'interest': invoice.interest,
                     'xirr': invoice.xirr,
-                    'tenure_in_days' :invoice.tenure_in_days,
-                    'principle_amt' : invoice.principle_amt,
-                    'expiration_time' : invoice.expiration_time,
-                    'remaining_partitions' : invoice.remaining_partitions,
-                    'sold' : invoice.sold
+                    'tenure_in_days': invoice.tenure_in_days,
+                    'principle_amt': invoice.principle_amt,
+                    'expiration_time': invoice.expiration_time,
+                    'remaining_partitions': invoice.remaining_partitions,
+                    'sold': invoice.sold
                 }
-                Buyer.append(invoice_data)
-        #CanBuy
-        sellers = models.Sellers.objects.filter(sold=False, remaining_partitions__gt=0)
-        invoice_list2 = []
-        for seller in sellers:
-            invoice = seller.Invoice
-            invoice_data = {
-                'id': invoice.id,
-                'no_of_partitions': invoice.no_of_partitions,
-                'name': invoice.name,
-                'Admin post_date': invoice.post_date,
-                ' Admin post_time': invoice.post_time,
-                'interest': invoice.interest,
-                'xirr': invoice.xirr,
-                'tenure_in_days' :invoice.tenure_in_days,
-                'Admin principle_amt' : invoice.principle_amt,
-                'expiration_time' : invoice.expiration_time,
-                'User' : seller.User,
-                'amount' : seller.amount,
-                'sell_date' :seller.sell_date,
-                'sell_time' : seller.sell_time,
-                'remaining_partitions' :seller.remaining_partitions,
-                'sold' : seller.sold
-            }
-            Buyer.append(invoice_data)
+                buyer_list.append(invoice_data)
 
-        return JsonResponse({"Buyer": Buyer}, status=200)
+            # Buyer: Sellers with remaining partitions available for purchase
+            sellers = models.Sellers.objects.filter(sold=False, remaining_partitions__gt=0)
+            seller_list = []
+            for seller in sellers:
+                invoice = seller.Invoice
+                invoice_data = {
+                    'id': invoice.id,
+                    'no_of_partitions': invoice.no_of_partitions,
+                    'name': invoice.name,
+                    'Admin post_date': invoice.post_date,
+                    'Admin post_time': invoice.post_time,
+                    'interest': invoice.interest,
+                    'xirr': invoice.xirr,
+                    'tenure_in_days': invoice.tenure_in_days,
+                    'Admin principle_amt': invoice.principle_amt,
+                    'expiration_time': invoice.expiration_time,
+                    'User': {
+                        'id': seller.User.id
+                    },
+                    'amount': seller.amount,
+                    'sell_date': seller.sell_date,
+                    'sell_time': seller.sell_time,
+                    'remaining_partitions': seller.remaining_partitions,
+                    'sold': seller.sold
+                }
+                seller_list.append(invoice_data)
+
+            combined_list = buyer_list + seller_list
+
+            return JsonResponse({"Buyer": combined_list}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
     else:
-        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
-    
+        return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 # After each successfully creation of rows in all tables it should send success msg to frontEnd
 # fractional_unit_ID will be in array
 # check the fractional_unit_IDs user is requesting is with whom if fractional_unit_ID is
