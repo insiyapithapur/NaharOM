@@ -543,7 +543,7 @@ def TobuyAPI(request):
                     Remaining_fraction  = models.FractionalUnits.objects.filter(
                         sold=False , invoice = invoice)
                     
-                    Remaining_fraction_count = fractional_units.count()
+                    Remaining_fraction_count = Remaining_fraction.count()
                     print("Remaining_fraction_count ",Remaining_fraction_count)
                     # if Remaining_fraction_count:
                         
