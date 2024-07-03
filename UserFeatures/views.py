@@ -144,7 +144,7 @@ def BankAccDetailsAPI(request):
                 return JsonResponse({"message": "User role not found"}, status=404)
 
             bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-            print(bank_accounts)
+            print(bank_accounts.count())
             if not bank_accounts.exists():
                 return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
 
@@ -752,8 +752,8 @@ def LedgerAPI(request, user_role_id):
                     "invoice": transaction.invoice.name if transaction.invoice else None,
                     "time_date": transaction.time_date,
                 })
-
-            return JsonResponse({"transactions": transactions_data}, status=200)
+                wallet_balance = models.OutstandingBalance.objects.get(bank_acc=bank_accounts)
+            return JsonResponse({"transactions": transactions_data , "Balance" : wallet_balance.balance}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
