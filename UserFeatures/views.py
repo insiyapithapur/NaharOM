@@ -228,8 +228,9 @@ def Credit_FundsAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
-def GetInvoice(request):
+def GetDetails(request):
     if request.method == 'GET':
+
         invoices = models.Invoices.objects.all().values(
             'id', 'primary_invoice_id', 'no_of_partitions', 'name', 'post_date' , 'post_time','interest','xirr','tenure_in_days','principle_amt','expiration_time','remaining_partitions'
         )
@@ -413,32 +414,23 @@ def TobuyAPI(request):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
             with transaction.atomic():
-                # first check if seller_id is there is request
                 if seller_id:
                     try:
                         seller = models.Sellers.objects.get(id=seller_id)
-                        print("seller.remaining_partitions before buying ",seller.remaining_partitions)
                     except models.Sellers.DoesNotExist:
                         return JsonResponse({"message": "Seller not found"}, status=404)
                     
-                    # no_of_partition if 3 requested che so 3 remaining che k nai first a check karvanu 
-                    # from seller table ane if remaining che fractional_units table mathi koi bhi 3 j 
-                    # seller ni id ni hoi a assign kari devani 
-
-                    # checking if no_of_partition the user_role_id is requesting is there or not from Seller table
                     if seller.remaining_partitions < no_of_partition :
                         return JsonResponse({"message": "Not enough fractional units available"}, status=400)
                     
                     fractional_units = models.FractionalUnits.objects.filter(
                         current_owner=seller.User, sold=True)[:no_of_partition]
                     fractional_units_count = fractional_units.count()
-                    print("fractional_units_count ",fractional_units_count)
+                    # print("fractional_units_count ",fractional_units_count)
 
-                    # checking if no_of_partition the user_role_id is requesting is there or not from FractionalUnits table whose current_owner is seller
                     if fractional_units_count < no_of_partition :
                         return JsonResponse({"message": "Not enough fractional units available"}, status=400)
                     
-                    # if there is fractional_units then it will register user_role_id as buyer
                     buyer = models.Buyers.objects.create(
                         user=user_role,
                         invoice=invoice,
@@ -461,16 +453,12 @@ def TobuyAPI(request):
 
                     seller.remaining_partitions -= no_of_partition
                     if seller.remaining_partitions == 0:
-                        seller.someone_purchased = True
+                        seller.sold = True
                     seller.save()
-                    print("seller.remaining_partitions after buying ",seller.remaining_partitions)
+                    # print("seller.remaining_partitions after buying ",seller.remaining_partitions)
 
-                    # try:
-                    #     seller_wallet = models.OutstandingBalance.objects.get(id=seller.wallet.)
-                    # except models.OutstandingBalance.DoesNotExist:
-                    #     return JsonResponse({"message": "Wallet not found"}, status=404)
                     seller_wallet = seller.wallet
-                    print("seller_wallet.balance " ,seller_wallet.balance)
+                    # print("seller_wallet.balance " ,seller_wallet.balance)
                     seller_wallet.balance += total_amount_invested
                     seller_wallet.save()
 
@@ -513,13 +501,11 @@ def TobuyAPI(request):
                     fractional_units = models.FractionalUnits.objects.filter(
                         current_owner=None, sold=False)[:no_of_partition]
                     fractional_units_count = fractional_units.count()
-                    print("fractional_units_count ",fractional_units_count)
+                    # print("fractional_units_count ",fractional_units_count)
 
-                    # checking if no_of_partition the user_role_id is requesting is there or not from FractionalUnits table whose current_owner is seller
                     if fractional_units_count < no_of_partition :
                         return JsonResponse({"message": "Not enough fractional units available"}, status=400)
                     
-                    # if there is fractional_units then it will register user_role_id as buyer
                     buyer = models.Buyers.objects.create(
                         user=user_role,
                         invoice=invoice,
@@ -554,6 +540,14 @@ def TobuyAPI(request):
                         invoice=invoice,
                         time_date=timezone.now()
                     )
+                    Remaining_fraction  = models.FractionalUnits.objects.filter(
+                        current_owner=None, sold=False , invoice = invoice)
+                    
+                    Remaining_fraction_count = fractional_units.count()
+                    print("Remaining_fraction_count ",Remaining_fraction_count)
+                    # if Remaining_fraction_count:
+                        
+                        
                     return JsonResponse({"message": "Transaction completed successfully", "buyer_id": buyer.id}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
@@ -582,11 +576,11 @@ def ToSellAPI(request):
                 user_role = models.UserRole.objects.get(id=user_role_id)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
-            print("user_role ",user_role)
+            # print("user_role ",user_role)
 
             with transaction.atomic():
                 Had_no_of_fraction = models.FractionalUnits.objects.filter(invoice = invoice_id , current_owner = user_role_id).count()
-                print("Had_no_of_fraction " , Had_no_of_fraction)
+                # print("Had_no_of_fraction " , Had_no_of_fraction)
 
                 if not Had_no_of_fraction:
                     return JsonResponse({"message": "No fractions for sell"}, status=404)
@@ -617,7 +611,7 @@ def ToSellAPI(request):
                     remaining_partitions=no_of_fractions,
                     sold=False
                 )
-                print(seller)
+                # print(seller)
                 return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": seller.id}, status=201)
 
         except json.JSONDecodeError:

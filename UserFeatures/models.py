@@ -109,6 +109,7 @@ class Invoices(models.Model):
     principle_amt = models.IntegerField()
     expiration_time = models.DateTimeField(default=time(12, 0))
     remaining_partitions = models.IntegerField(null=True , blank=True)
+    sold = models.BooleanField(default=False)
 
 class FractionalUnits(models.Model):
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE)

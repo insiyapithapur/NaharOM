@@ -79,7 +79,9 @@ def InvoicesAPI(request):
                 xirr=xirr,
                 tenure_in_days=tenure_in_days,
                 principle_amt=principle_amt,
-                expiration_time=expiration_time
+                expiration_time=expiration_time,
+                remaining_partitions = no_of_fractional_units ,
+                sold = False
             )
             print("after create")
 
