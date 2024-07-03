@@ -227,6 +227,17 @@ def Credit_FundsAPI(request):
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
+@csrf_exempt
+def GetInvoice(request):
+    if request.method == 'GET':
+        invoices = models.Invoices.objects.all().values(
+            'id', 'primary_invoice_id', 'no_of_partitions', 'name', 'post_date' , 'post_time','interest','xirr','tenure_in_days','principle_amt','expiration_time','remaining_partitions'
+        )
+        return JsonResponse(list(invoices), safe=False, status=200)
+
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+    
 # After each successfully creation of rows in all tables it should send success msg to frontEnd
 # fractional_unit_ID will be in array
 # check the fractional_unit_IDs user is requesting is with whom if fractional_unit_ID is
@@ -290,6 +301,7 @@ def TobuyAPI(request):
 
                     if fractional_unit_id:
                         try:
+                            # this is checking if fractional_unit_id is already exist or not 
                             fractional_unit = models.FractionalUnits.objects.get(unit_id=fractional_unit_id, invoice=invoice, current_owner=seller.buyer.user, sold=True)
                             fractional_units = [fractional_unit]
                         except models.FractionalUnits.DoesNotExist:

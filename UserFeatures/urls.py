@@ -10,4 +10,5 @@ urlpatterns = [
     path('ToBuy/',views.TobuyAPI), #wallet_to_buy
     path('ToSell/',views.ToSellAPI), #sell_to_wallet
     path('BuyerIRR/<int:user_role_id>',views.BuyerIRRAPI),
+    path('GetInvoice/',views.GetInvoice),
 ]
