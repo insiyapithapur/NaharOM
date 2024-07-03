@@ -258,14 +258,12 @@ def GetDetails(request):
                 invoice = seller.Invoice
                 invoice_data = {
                     'id': invoice.id,
-                    'no_of_partitions': invoice.no_of_partitions,
                     'name': invoice.name,
                     'Admin post_date': invoice.post_date,
                     'Admin post_time': invoice.post_time,
                     'interest': invoice.interest,
                     'xirr': invoice.xirr,
                     'tenure_in_days': invoice.tenure_in_days,
-                    'Admin principle_amt': invoice.principle_amt,
                     'expiration_time': invoice.expiration_time,
                     'User': {
                         'id': seller.User.id
