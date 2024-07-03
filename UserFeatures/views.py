@@ -541,7 +541,7 @@ def TobuyAPI(request):
                         time_date=timezone.now()
                     )
                     Remaining_fraction  = models.FractionalUnits.objects.filter(
-                        current_owner=None, sold=False , invoice = invoice)
+                        sold=False , invoice = invoice)
                     
                     Remaining_fraction_count = fractional_units.count()
                     print("Remaining_fraction_count ",Remaining_fraction_count)
