@@ -577,58 +577,48 @@ def ToSellAPI(request):
 
             if not all([user_role_id, invoice_id, no_of_fractions, amount]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
-            print("all check")
+            
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
-            print("user_role")
+            print("user_role ",user_role)
 
-            # buyers = models.Buyers.objects.filter(user=user_role, invoice_id=invoice_id)
-            no_of_fraction = models.FractionalUnits.objects.filter(invoice = invoice_id , current_owner = user_role_id).count()
-            print("no_of_fraction " , no_of_fraction)
+            with transaction.atomic():
+                Had_no_of_fraction = models.FractionalUnits.objects.filter(invoice = invoice_id , current_owner = user_role_id).count()
+                print("Had_no_of_fraction " , Had_no_of_fraction)
 
-            # # if not no_of_fraction:
-            #     return JsonResponse({"message": "Buyer for the given invoice not found"}, status=404)
+                if not Had_no_of_fraction:
+                    return JsonResponse({"message": "No fractions for sell"}, status=404)
+                
+                if Had_no_of_fraction < no_of_fractions:
+                    return JsonResponse({"message": "Not enough partitions to sell"}, status=400)
 
-            # total_partitions_owned = sum(no_of_fraction.n for buyer in buyers)
-            # print("total_partitions_owned ",total_partitions_owned)
-
-            # Verify if the buyer has enough partitions to sell
-            if no_of_fraction < no_of_fractions:
-                return JsonResponse({"message": "Not enough partitions to sell"}, status=400)
-
-            # try:
-            #     buyer = models.Buyers.objects.get(user=user_role, invoice_id=invoice_id)
-            # except models.Buyers.DoesNotExist:
-            #     return JsonResponse({"message": "Buyer for the given invoice not found"}, status=404)
-            # print("buyer")
-            try:
-                bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
-            except models.BankAccountDetails.DoesNotExist:
-                return JsonResponse({"message": "BankAcc not found"}, status=404)
-            print("bankAcc")
-            try:
-                wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
-            except models.OutstandingBalance.DoesNotExist:
-                return JsonResponse({"message": "Wallet not found"}, status=404)
-            print("wallet")
-            sell_date = timezone.now().date()
-            sell_time = timezone.now().time()
-            remaining_partitions -= no_of_fractions
-            print(remaining_partitions)
-            seller = models.Sellers.objects.create(
-                buyer=buyer,
-                amount=amount,
-                wallet=wallet,
-                no_of_partitions=no_of_fractions,
-                sell_date=sell_date,
-                sell_time=sell_time,
-                remaining_partitions=remaining_partitions,
-                someone_purchased=False
-            )
-            print(seller)
-            return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": seller.id}, status=201)
+                try:
+                    bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
+                except models.BankAccountDetails.DoesNotExist:
+                    return JsonResponse({"message": "BankAcc not found"}, status=404)
+               
+                try:
+                    wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
+                except models.OutstandingBalance.DoesNotExist:
+                    return JsonResponse({"message": "Wallet not found"}, status=404)
+            
+                sell_date = timezone.now().date()
+                sell_time = timezone.now().time()
+            
+                seller = models.Sellers.objects.create(
+                    buyer=user_role,
+                    amount=amount,
+                    wallet=wallet,
+                    no_of_partitions=no_of_fractions,
+                    sell_date=sell_date,
+                    sell_time=sell_time,
+                    remaining_partitions=no_of_fractions,
+                    sold=False
+                )
+                print(seller)
+                return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": seller.id}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)

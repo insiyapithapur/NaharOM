@@ -139,14 +139,14 @@ class Buyers(models.Model):
     purchase_time = models.TimeField()
 
 class Sellers(models.Model):
-    buyer = models.ForeignKey(Buyers, on_delete=models.CASCADE)
+    User = models.ForeignKey(UserRole, on_delete=models.CASCADE)
     amount = models.FloatField()
     wallet = models.ForeignKey('OutstandingBalance', on_delete=models.CASCADE)
     no_of_partitions = models.IntegerField()
     sell_date = models.DateField()
     sell_time = models.TimeField()
     remaining_partitions = models.IntegerField()
-    someone_purchased = models.BooleanField(default=False)
+    sold = models.BooleanField(default=False)
 
 class OutstandingBalanceTransaction(models.Model):
     wallet = models.ForeignKey(OutstandingBalance, on_delete=models.CASCADE)
