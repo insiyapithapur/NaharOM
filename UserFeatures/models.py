@@ -105,6 +105,7 @@ class Invoices(models.Model):
     post_time = models.TimeField()
     interest = models.FloatField()
     xirr = models.FloatField()
+    irr = models.FloatField()
     tenure_in_days = models.IntegerField()
     principle_amt = models.IntegerField()
     expiration_time = models.DateTimeField(default=time(12, 0))

@@ -761,21 +761,23 @@ def LedgerAPI(request, user_role_id):
         return JsonResponse({"message": "Only GET method is allowed"}, status=405) 
 
 @csrf_exempt
-def BuyerIRRAPI(request,user_role_id):
+def BuyerIRRAPI(request,invoice_id):
     if request.method == 'GET':
         try:
             try:
-                user_role = models.UserRole.objects.get(id=user_role_id)
-            except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                # user_role = models.UserRole.objects.get(id=user_role_id)
+                invoice = models.Invoices.objects.get(id = invoice_id)
+            except models.Invoices.DoesNotExist:
+                return JsonResponse({"message": "Invoice not found"}, status=404)
             
             # here all this field will be come from primary platform
             # Interest Actual = (IRR * fractional_Unit_Value * tenure) / 365
-            # Total Earnings = Interest Actual + Expected Profit 
+            # Total Earnings = Interest Actual + Expected Profit
+            InterestActual  =  (  (invoice.irr * invoice.no_of_partitions ) /365 ) * invoice.tenure_in_days
             response_data = {
-                "XIRR": "18%",
-                "No of Days": 30,
-                "Interest Actual": 8219.178082,
+                "XIRR": invoice.xirr,
+                "No_of_Days": invoice.tenure_in_days,
+                "Interest Actual": InterestActual,
                 # "Total Earnings": 13219.17808
             }
 
