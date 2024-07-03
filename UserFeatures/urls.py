@@ -8,7 +8,7 @@ urlpatterns = [
     path('Credit_Funds/',views.Credit_FundsAPI), #bank_to_wallet
     path('ledger/<int:user_role_id>',views.LedgerAPI),
     path('ToBuy/',views.TobuyAPI), #wallet_to_buy
-    path('ToSell/',views.ToSellAPI), #sell_to_wallet
+    path('PostForSell/',views.ToSellAPI), #sell_to_wallet
     path('BuyerIRR/<int:user_role_id>',views.BuyerIRRAPI),
     path('GetInvoice/',views.GetInvoice),
 ]

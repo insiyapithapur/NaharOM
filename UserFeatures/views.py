@@ -583,11 +583,24 @@ def ToSellAPI(request):
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
             print("user_role")
-            try:
-                buyer = models.Buyers.objects.get(user=user_role, invoice_id=invoice_id)
-            except models.Buyers.DoesNotExist:
+
+            buyers = models.Buyers.objects.filter(user=user_role, invoice_id=invoice_id)
+
+            if not buyers.exists():
                 return JsonResponse({"message": "Buyer for the given invoice not found"}, status=404)
-            print("buyer")
+
+            total_partitions_owned = sum(buyer.no_of_partitions for buyer in buyers)
+            print("total_partitions_owned ",total_partitions_owned)
+
+            # Verify if the buyer has enough partitions to sell
+            if total_partitions_owned < no_of_fractions:
+                return JsonResponse({"message": "Not enough partitions to sell"}, status=400)
+
+            # try:
+            #     buyer = models.Buyers.objects.get(user=user_role, invoice_id=invoice_id)
+            # except models.Buyers.DoesNotExist:
+            #     return JsonResponse({"message": "Buyer for the given invoice not found"}, status=404)
+            # print("buyer")
             try:
                 bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
             except models.BankAccountDetails.DoesNotExist:
@@ -600,7 +613,7 @@ def ToSellAPI(request):
             print("wallet")
             sell_date = timezone.now().date()
             sell_time = timezone.now().time()
-            remaining_partitions = buyer.no_of_partitions - no_of_fractions
+            remaining_partitions -= no_of_fractions
             print(remaining_partitions)
             seller = models.Sellers.objects.create(
                 buyer=buyer,
