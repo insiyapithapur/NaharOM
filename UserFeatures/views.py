@@ -584,16 +584,18 @@ def ToSellAPI(request):
                 return JsonResponse({"message": "User role not found"}, status=404)
             print("user_role")
 
-            buyers = models.Buyers.objects.filter(user=user_role, invoice_id=invoice_id)
+            # buyers = models.Buyers.objects.filter(user=user_role, invoice_id=invoice_id)
+            no_of_fraction = models.FractionalUnits.objects.filter(invoice = invoice_id , current_owner = user_role_id).count()
+            print("no_of_fraction " , no_of_fraction)
 
-            if not buyers.exists():
-                return JsonResponse({"message": "Buyer for the given invoice not found"}, status=404)
+            # # if not no_of_fraction:
+            #     return JsonResponse({"message": "Buyer for the given invoice not found"}, status=404)
 
-            total_partitions_owned = sum(buyer.no_of_partitions for buyer in buyers)
-            print("total_partitions_owned ",total_partitions_owned)
+            # total_partitions_owned = sum(no_of_fraction.n for buyer in buyers)
+            # print("total_partitions_owned ",total_partitions_owned)
 
             # Verify if the buyer has enough partitions to sell
-            if total_partitions_owned < no_of_fractions:
+            if no_of_fraction < no_of_fractions:
                 return JsonResponse({"message": "Not enough partitions to sell"}, status=400)
 
             # try:
