@@ -459,7 +459,7 @@ def TobuyAPI(request):
                             transaction_date=timezone.now()
                         )
 
-                    seller.remaining_partitions  = seller.remaining_partitions - no_of_partition
+                    seller.remaining_partitions -= no_of_partition
                     if seller.remaining_partitions == 0:
                         seller.someone_purchased = True
                     seller.save()
@@ -471,7 +471,7 @@ def TobuyAPI(request):
                     #     return JsonResponse({"message": "Wallet not found"}, status=404)
                     seller_wallet = seller.wallet
                     print("seller_wallet.balance " ,seller_wallet.balance)
-                    seller_wallet.balance = seller_wallet.balance + total_amount_invested
+                    seller_wallet.balance += total_amount_invested
                     seller_wallet.save()
 
                     models.OutstandingBalanceTransaction.objects.create(
@@ -491,7 +491,7 @@ def TobuyAPI(request):
                     if buyer_wallet.balance < total_amount_invested:
                         return JsonResponse({"message": "Insufficient funds in the wallet"}, status=400)
                     else:
-                        buyer_wallet.balance = buyer_wallet - total_amount_invested
+                        buyer_wallet.balance -= total_amount_invested
                         buyer_wallet.save()
 
                     models.OutstandingBalanceTransaction.objects.create(
@@ -538,7 +538,7 @@ def TobuyAPI(request):
                     if buyer_wallet.balance < total_amount_invested:
                         return JsonResponse({"message": "Insufficient funds in the wallet"}, status=400)
                     else:
-                        buyer_wallet.balance = buyer_wallet - total_amount_invested
+                        buyer_wallet.balance -= total_amount_invested
                         buyer_wallet.save()
 
                     models.OutstandingBalanceTransaction.objects.create(
