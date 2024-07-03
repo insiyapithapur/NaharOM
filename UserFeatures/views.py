@@ -230,12 +230,26 @@ def Credit_FundsAPI(request):
 @csrf_exempt
 def GetDetails(request):
     if request.method == 'GET':
+        invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
+        invoice_list = []
+        for invoice in invoices:
+                invoice_data = {
+                    'id': invoice.id,
+                    'no_of_partitions': invoice.no_of_partitions,
+                    'name': invoice.name,
+                    'post_date': invoice.post_date,
+                    'post_time': invoice.post_time,
+                    'interest': invoice.interest,
+                    'xirr': invoice.xirr,
+                    'tenure_in_days' :invoice.tenure_in_days,
+                    'principle_amt' : invoice.principle_amt,
+                    'expiration_time' : invoice.expiration_time,
+                    'remaining_partitions' : invoice.remaining_partitions,
+                    'sold' : invoice.sold
+                }
+                invoice_list.append(invoice_data)
 
-        invoices = models.Invoices.objects.all().values(
-            'id', 'primary_invoice_id', 'no_of_partitions', 'name', 'post_date' , 'post_time','interest','xirr','tenure_in_days','principle_amt','expiration_time','remaining_partitions'
-        )
-        return JsonResponse(list(invoices), safe=False, status=200)
-
+        return JsonResponse({"invoices": invoice_list}, status=200)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     
