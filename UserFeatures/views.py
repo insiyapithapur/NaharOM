@@ -230,8 +230,9 @@ def Credit_FundsAPI(request):
 @csrf_exempt
 def GetDetails(request):
     if request.method == 'GET':
+        # CanBuy
         invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
-        invoice_list = []
+        Buyer = []
         for invoice in invoices:
                 invoice_data = {
                     'id': invoice.id,
@@ -247,9 +248,33 @@ def GetDetails(request):
                     'remaining_partitions' : invoice.remaining_partitions,
                     'sold' : invoice.sold
                 }
-                invoice_list.append(invoice_data)
+                Buyer.append(invoice_data)
+        #CanBuy
+        sellers = models.Sellers.objects.filter(sold=False, remaining_partitions__gt=0)
+        invoice_list2 = []
+        for seller in sellers:
+            invoice = seller.Invoice
+            invoice_data = {
+                'id': invoice.id,
+                'no_of_partitions': invoice.no_of_partitions,
+                'name': invoice.name,
+                'Admin post_date': invoice.post_date,
+                ' Admin post_time': invoice.post_time,
+                'interest': invoice.interest,
+                'xirr': invoice.xirr,
+                'tenure_in_days' :invoice.tenure_in_days,
+                'Admin principle_amt' : invoice.principle_amt,
+                'expiration_time' : invoice.expiration_time,
+                'User' : seller.User,
+                'amount' : seller.amount,
+                'sell_date' :seller.sell_date,
+                'sell_time' : seller.sell_time,
+                'remaining_partitions' :seller.remaining_partitions,
+                'sold' : seller.sold
+            }
+            Buyer.append(invoice_data)
 
-        return JsonResponse({"invoices": invoice_list}, status=200)
+        return JsonResponse({"Buyer": Buyer}, status=200)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     

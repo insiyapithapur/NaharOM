@@ -141,6 +141,7 @@ class Buyers(models.Model):
 
 class Sellers(models.Model):
     User = models.ForeignKey(UserRole, on_delete=models.CASCADE)
+    Invoice = models.ForeignKey(Invoices , on_delete=models.CASCADE)
     amount = models.FloatField()
     wallet = models.ForeignKey('OutstandingBalance', on_delete=models.CASCADE)
     no_of_partitions = models.IntegerField()
