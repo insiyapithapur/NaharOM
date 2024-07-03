@@ -281,7 +281,8 @@ def TobuyAPI(request):
 
                 if seller_id:
                     try:
-                        seller = models.Sellers.objects.get(id=seller_id, remaining_partitions__gte=no_of_partition)
+                        seller = models.Sellers.objects.get(id=seller_id)
+                        print(seller.remaining_partitions)
                     except models.Sellers.DoesNotExist:
                         return JsonResponse({"message": "Seller not found or not enough partitions available"}, status=404)
 
@@ -294,7 +295,7 @@ def TobuyAPI(request):
                         except models.FractionalUnits.DoesNotExist:
                             return JsonResponse({"message": "Requested fractional unit not available"}, status=404)
                     else:
-                        fractional_units = models.FractionalUnits.objects.filter(invoice=invoice, current_owner=seller.buyer.user, sold=False)[:no_of_partition]
+                        fractional_units = models.FractionalUnits.objects.filter(invoice=invoice ,  sold=False)[:no_of_partition]
                         if len(fractional_units) < no_of_partition:
                             return JsonResponse({"message": "Not enough fractional units available"}, status=400)
 
