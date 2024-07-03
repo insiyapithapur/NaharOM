@@ -296,7 +296,30 @@ def GetDetails(request,user_role_id):
                         'purchase_time': Brought_invoice.purchase_time
                     }
                     Brought_list.append(Buyer_data)
-            return JsonResponse({"Buyer": combined_list , "Brought Invoices" : Brought_list}, status=200)
+
+            # Posted For Sell
+            posted_for_sell = models.Sellers.objects.filter(User = user_role_id)
+            posted_for_sell_list = []
+            for seller in posted_for_sell:
+                if seller.User.id == user_role_id:
+                    invoice = seller.Invoice
+                    posted_for_sell_list_data = {
+                        'id': invoice.id,
+                        'name': invoice.name,
+                        'Admin post_date': invoice.post_date,
+                        'Admin post_time': invoice.post_time,
+                        'interest': invoice.interest,
+                        'xirr': invoice.xirr,
+                        'tenure_in_days': invoice.tenure_in_days,
+                        'expiration_time': invoice.expiration_time,
+                        'amount': seller.amount,
+                        'sell_date': seller.sell_date,
+                        'sell_time': seller.sell_time,
+                        'remaining_partitions': seller.remaining_partitions,
+                        'sold': seller.sold
+                    }
+                posted_for_sell_list.append(posted_for_sell_list_data)
+            return JsonResponse({"Buyer": combined_list , "Brought Invoices" : Brought_list , "Post for sell":posted_for_sell_list}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
