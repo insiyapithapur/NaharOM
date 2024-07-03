@@ -545,9 +545,14 @@ def TobuyAPI(request):
                     
                     Remaining_fraction_count = Remaining_fraction.count()
                     print("Remaining_fraction_count ",Remaining_fraction_count)
-                    # if Remaining_fraction_count:
-                        
-                        
+
+                    if Remaining_fraction_count:
+                        invoice.remaining_partitions = Remaining_fraction_count
+                        invoice.save()
+                    else:
+                        invoice.remaining_partitions = 0
+                        invoice.sold = True
+                        invoice.save()
                     return JsonResponse({"message": "Transaction completed successfully", "buyer_id": buyer.id}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
