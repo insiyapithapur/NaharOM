@@ -228,7 +228,7 @@ def Credit_FundsAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
-def GetDetails(request):
+def GetDetails(request,user_role_id):
     if request.method == 'GET':
         try:
             # CanBuy: Invoices with remaining partitions available for purchase
@@ -255,25 +255,26 @@ def GetDetails(request):
             sellers = models.Sellers.objects.filter(sold=False, remaining_partitions__gt=0)
             seller_list = []
             for seller in sellers:
-                invoice = seller.Invoice
-                invoice_data = {
-                    'id': invoice.id,
-                    'name': invoice.name,
-                    'Admin post_date': invoice.post_date,
-                    'Admin post_time': invoice.post_time,
-                    'interest': invoice.interest,
-                    'xirr': invoice.xirr,
-                    'tenure_in_days': invoice.tenure_in_days,
-                    'expiration_time': invoice.expiration_time,
-                    'User': {
-                        'id': seller.User.id
-                    },
-                    'amount': seller.amount,
-                    'sell_date': seller.sell_date,
-                    'sell_time': seller.sell_time,
-                    'remaining_partitions': seller.remaining_partitions,
-                    'sold': seller.sold
-                }
+                if seller.User.id != user_role_id:
+                    invoice = seller.Invoice
+                    invoice_data = {
+                        'id': invoice.id,
+                        'name': invoice.name,
+                        'Admin post_date': invoice.post_date,
+                        'Admin post_time': invoice.post_time,
+                        'interest': invoice.interest,
+                        'xirr': invoice.xirr,
+                        'tenure_in_days': invoice.tenure_in_days,
+                        'expiration_time': invoice.expiration_time,
+                        'User': {
+                            'id': seller.User.id
+                        },
+                        'amount': seller.amount,
+                        'sell_date': seller.sell_date,
+                        'sell_time': seller.sell_time,
+                        'remaining_partitions': seller.remaining_partitions,
+                        'sold': seller.sold
+                    }
                 seller_list.append(invoice_data)
 
             combined_list = buyer_list + seller_list
