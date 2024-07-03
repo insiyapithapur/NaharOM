@@ -430,7 +430,7 @@ def TobuyAPI(request):
                         return JsonResponse({"message": "Not enough fractional units available"}, status=400)
                     
                     fractional_units = models.FractionalUnits.objects.filter(
-                        current_owner=seller.buyer.user, sold=True)[:no_of_partition]
+                        current_owner=seller.User, sold=True)[:no_of_partition]
                     fractional_units_count = fractional_units.count()
                     print("fractional_units_count ",fractional_units_count)
 
