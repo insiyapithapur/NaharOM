@@ -231,7 +231,7 @@ def Credit_FundsAPI(request):
 def GetDetails(request,user_role_id):
     if request.method == 'GET':
         try:
-            # CanBuy: Invoices with remaining partitions available for purchase
+            # CanBuy
             invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
             buyer_list = []
             for invoice in invoices:
@@ -251,7 +251,7 @@ def GetDetails(request,user_role_id):
                 }
                 buyer_list.append(invoice_data)
 
-            # Buyer: Sellers with remaining partitions available for purchase
+            # Buyer
             sellers = models.Sellers.objects.filter(sold=False, remaining_partitions__gt=0)
             seller_list = []
             for seller in sellers:
@@ -276,10 +276,27 @@ def GetDetails(request,user_role_id):
                         'sold': seller.sold
                     }
                 seller_list.append(invoice_data)
-
             combined_list = buyer_list + seller_list
 
-            return JsonResponse({"Buyer": combined_list}, status=200)
+            #Already Buy
+            Brought_invoices = models.Buyers.objects.filter(user=user_role_id)
+            Brought_list = []
+            for Brought_invoice in Brought_invoices:
+                    Buyer_data = {
+                        'id': Brought_invoice.id,
+                        'User': {
+                            'id': Brought_invoice.user.id
+                        },
+                        'Invoice':{
+                            'id' : Brought_invoice.invoice.id
+                        },
+                        'no_of_partitions': Brought_invoice.no_of_partitions,
+                        'total_amount_invested': Brought_invoice.total_amount_invested,
+                        'purchase_date': Brought_invoice.purchase_date,
+                        'purchase_time': Brought_invoice.purchase_time
+                    }
+                    Brought_list.append(Buyer_data)
+            return JsonResponse({"Buyer": combined_list , "Brought Invoices" : Brought_list}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
