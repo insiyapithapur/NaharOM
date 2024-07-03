@@ -247,7 +247,8 @@ def GetDetails(request,user_role_id):
                     'principle_amt': invoice.principle_amt,
                     'expiration_time': invoice.expiration_time,
                     'remaining_partitions': invoice.remaining_partitions,
-                    'sold': invoice.sold
+                    'sold': invoice.sold,
+                    'type' : 'CanBuy'
                 }
                 buyer_list.append(invoice_data)
 
@@ -260,8 +261,8 @@ def GetDetails(request,user_role_id):
                     invoice_data = {
                         'id': invoice.id,
                         'name': invoice.name,
-                        'Admin post_date': invoice.post_date,
-                        'Admin post_time': invoice.post_time,
+                        'Admin_post_date': invoice.post_date,
+                        'Admin_post_time': invoice.post_time,
                         'interest': invoice.interest,
                         'xirr': invoice.xirr,
                         'tenure_in_days': invoice.tenure_in_days,
@@ -273,10 +274,10 @@ def GetDetails(request,user_role_id):
                         'sell_date': seller.sell_date,
                         'sell_time': seller.sell_time,
                         'remaining_partitions': seller.remaining_partitions,
-                        'sold': seller.sold
+                        'sold': seller.sold,
+                        'type' : 'CanBuy'
                     }
                 seller_list.append(invoice_data)
-            combined_list = buyer_list + seller_list
 
             #Already Buy
             Brought_invoices = models.Buyers.objects.filter(user=user_role_id)
@@ -293,7 +294,8 @@ def GetDetails(request,user_role_id):
                         'no_of_partitions': Brought_invoice.no_of_partitions,
                         'total_amount_invested': Brought_invoice.total_amount_invested,
                         'purchase_date': Brought_invoice.purchase_date,
-                        'purchase_time': Brought_invoice.purchase_time
+                        'purchase_time': Brought_invoice.purchase_time,
+                        'type' : 'brought'
                     }
                     Brought_list.append(Buyer_data)
 
@@ -306,8 +308,8 @@ def GetDetails(request,user_role_id):
                     posted_for_sell_list_data = {
                         'id': invoice.id,
                         'name': invoice.name,
-                        'Admin post_date': invoice.post_date,
-                        'Admin post_time': invoice.post_time,
+                        'Admin_post_date': invoice.post_date,
+                        'Admin_post_time': invoice.post_time,
                         'interest': invoice.interest,
                         'xirr': invoice.xirr,
                         'tenure_in_days': invoice.tenure_in_days,
@@ -316,10 +318,12 @@ def GetDetails(request,user_role_id):
                         'sell_date': seller.sell_date,
                         'sell_time': seller.sell_time,
                         'remaining_partitions': seller.remaining_partitions,
-                        'sold': seller.sold
+                        'sold': seller.sold,
+                        'type' : 'Posted for sell'
                     }
                 posted_for_sell_list.append(posted_for_sell_list_data)
-            return JsonResponse({"Buyer": combined_list , "Brought Invoices" : Brought_list , "Post for sell":posted_for_sell_list}, status=200)
+                combined_list = buyer_list + seller_list + Brought_list + posted_for_sell_list
+            return JsonResponse({"Data": combined_list}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
