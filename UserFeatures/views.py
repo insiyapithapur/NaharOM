@@ -608,7 +608,7 @@ def ToSellAPI(request):
                 sell_time = timezone.now().time()
             
                 seller = models.Sellers.objects.create(
-                    buyer=user_role,
+                    User=user_role,
                     amount=amount,
                     wallet=wallet,
                     no_of_partitions=no_of_fractions,
