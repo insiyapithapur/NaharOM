@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from . import models
 from django.utils import timezone
 from django.db import transaction
+from django.utils.dateparse import parse_time
 
 @csrf_exempt
 def RegisterAPI(request):
@@ -231,6 +232,7 @@ def Credit_FundsAPI(request):
 def GetDetails(request,user_role_id):
     if request.method == 'GET':
         try:
+            # InterestcutoffTime = models.AdminSettings.objects.get(id=1)
             # CanBuy
             invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
             buyer_list = []
@@ -243,6 +245,7 @@ def GetDetails(request,user_role_id):
                     'post_time': invoice.post_time,
                     'interest': invoice.interest,
                     'xirr': invoice.xirr,
+                    'irr' : invoice.irr,
                     'tenure_in_days': invoice.tenure_in_days,
                     'principle_amt': invoice.principle_amt,
                     'expiration_time': invoice.expiration_time,
@@ -265,6 +268,7 @@ def GetDetails(request,user_role_id):
                         'Admin_post_time': invoice.post_time,
                         'interest': invoice.interest,
                         'xirr': invoice.xirr,
+                        'irr' : invoice.irr,
                         'tenure_in_days': invoice.tenure_in_days,
                         'expiration_time': invoice.expiration_time,
                         'User': {
@@ -291,8 +295,12 @@ def GetDetails(request,user_role_id):
                         'Invoice':{
                             'id' : Brought_invoice.invoice.id
                         },
-                        'no_of_partitions': Brought_invoice.no_of_partitions,
-                        'total_amount_invested': Brought_invoice.total_amount_invested,
+                        'no_of_puchased_partitions': Brought_invoice.no_of_partitions,
+                        'Total_Purchased_Amt': Brought_invoice.total_amount_invested,
+                        'tenure_in_days' : {
+                            'No_of_days_held' : Brought_invoice.invoice.tenure_in_days
+                        },
+                        # 'Interest cut off time' : InterestcutoffTime.interest_cut_off_time,
                         'purchase_date': Brought_invoice.purchase_date,
                         'purchase_time': Brought_invoice.purchase_time,
                         'type' : 'brought'
@@ -760,29 +768,53 @@ def LedgerAPI(request, user_role_id):
     else:
         return JsonResponse({"message": "Only GET method is allowed"}, status=405) 
 
-@csrf_exempt
-def BuyerIRRAPI(request,invoice_id):
-    if request.method == 'GET':
-        try:
-            try:
-                # user_role = models.UserRole.objects.get(id=user_role_id)
-                invoice = models.Invoices.objects.get(id = invoice_id)
-            except models.Invoices.DoesNotExist:
-                return JsonResponse({"message": "Invoice not found"}, status=404)
+# @csrf_exempt
+# def BuyerIRRAPI(request,invoice_id):
+#     if request.method == 'GET':
+#         try:
+#             try:
+#                 # user_role = models.UserRole.objects.get(id=user_role_id)
+#                 invoice = models.Invoices.objects.get(id = invoice_id)
+#             except models.Invoices.DoesNotExist:
+#                 return JsonResponse({"message": "Invoice not found"}, status=404)
             
-            # here all this field will be come from primary platform
-            # Interest Actual = (IRR * fractional_Unit_Value * tenure) / 365
-            # Total Earnings = Interest Actual + Expected Profit
-            InterestActual  =  (  (invoice.irr * invoice.no_of_partitions ) /365 ) * invoice.tenure_in_days
-            response_data = {
-                "XIRR": invoice.xirr,
-                "No_of_Days": invoice.tenure_in_days,
-                "Interest Actual": InterestActual,
-                # "Total Earnings": 13219.17808
-            }
+#             # here all this field will be come from primary platform
+#             # Interest Actual = (IRR * fractional_Unit_Value * tenure) / 365
+#             # Total Earnings = Interest Actual + Expected Profit
+#             InterestActual  =  (  (invoice.irr * invoice.no_of_partitions ) /365 ) * invoice.tenure_in_days
+#             response_data = {
+#                 "XIRR": invoice.xirr,
+#                 "No_of_Days": invoice.tenure_in_days,
+#                 "Interest Actual": InterestActual,
+#                 # "Total Earnings": 13219.17808
+#             }
 
-            return JsonResponse(response_data, status=200)
+#             return JsonResponse(response_data, status=200)
+#         except Exception as e:
+#             return JsonResponse({"message": "An error occurred: " + str(e)}, status=500)
+#     else:
+#         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
+
+@csrf_exempt
+def create_entry(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            time_str = data.get('interest_cut_off_time')
+            
+            if not time_str:
+                return JsonResponse({"message": "Time is required"}, status=400)
+            
+            interest_cut_off_time = parse_time(time_str)
+            if not interest_cut_off_time:
+                return JsonResponse({"message": "Invalid time format"}, status=400)
+            
+            new_entry = models.AdminSettings.objects.create(interest_cut_off_time=interest_cut_off_time)
+            return JsonResponse({"message": "Entry created successfully", "id": new_entry.id ,'interest_cut_of_time' : new_entry.interest_cut_off_time}, status=201)
+        
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
-            return JsonResponse({"message": "An error occurred: " + str(e)}, status=500)
+            return JsonResponse({"message": str(e)}, status=500)
     else:
-        return JsonResponse({"message": "Only GET method is allowed"}, status=405)
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
