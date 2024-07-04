@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from UserFeatures import models
 from django.utils import timezone
+from django.db import transaction
 
 @csrf_exempt
 def AdminLoginAPI(request):
@@ -93,6 +94,38 @@ def InvoicesAPI(request):
 
             return JsonResponse({"message": "Invoice created successfully", "invoice_id": invoice.id}, status=201)
 
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+
+    else:
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
+    
+@csrf_exempt
+def SalesPurchasedReportAPI(request):
+    if request.method == 'GET':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({"message": "user_id is required"}, status=400)
+            
+            try:
+                user = models.User.objects.get(id=user_id)
+            except models.User.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+
+            if not user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            
+            with transaction.atomic():
+                try:
+                    sales_purchase_report = models.SalePurchaseReport.objects.all()
+                except models.SalePurchaseReport.DoesNotExist:
+                    return JsonResponse({"message": "SalePurchaseReport not found"}, status=404)
+                return JsonResponse({"sales_purchase_report" : sales_purchase_report},status=200)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

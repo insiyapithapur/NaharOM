@@ -11,5 +11,5 @@ urlpatterns = [
     path('PostForSell/',views.ToSellAPI), #sell_to_wallet
     # path('BuyerIRR/<int:invoice_id>',views.BuyerIRRAPI),
     path('GetDetails/<int:user_role_id>',views.GetDetails),
-    path('path-to-create-entry/', views.create_entry, name='create_entry'),
+    path('AdminSettings/', views.create_entry, name='create_entry'),
 ]

@@ -232,7 +232,7 @@ def Credit_FundsAPI(request):
 def GetDetails(request,user_role_id):
     if request.method == 'GET':
         try:
-            # InterestcutoffTime = models.AdminSettings.objects.get(id=1)
+            InterestcutoffTime = models.AdminSettings.objects.get(id=1)
             # CanBuy
             invoices = models.Invoices.objects.filter(sold=False, remaining_partitions__gt=0)
             buyer_list = []
@@ -292,15 +292,17 @@ def GetDetails(request,user_role_id):
                         'User': {
                             'id': Brought_invoice.user.id
                         },
-                        'Invoice':{
-                            'id' : Brought_invoice.invoice.id
-                        },
                         'no_of_puchased_partitions': Brought_invoice.no_of_partitions,
                         'Total_Purchased_Amt': Brought_invoice.total_amount_invested,
-                        'tenure_in_days' : {
-                            'No_of_days_held' : Brought_invoice.invoice.tenure_in_days
+                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
+                        'InvoiceDetails' : {
+                            'id' : Brought_invoice.invoice.id,
+                            'interest' : Brought_invoice.invoice.interest,
+                            'xirr' : Brought_invoice.invoice.xirr,
+                            'irr' : Brought_invoice.invoice.irr,
+                            'PrincipleAmt' : Brought_invoice.invoice.principle_amt,
+                            'No_of_Units' : Brought_invoice.invoice.no_of_partitions,
                         },
-                        # 'Interest cut off time' : InterestcutoffTime.interest_cut_off_time,
                         'purchase_date': Brought_invoice.purchase_date,
                         'purchase_time': Brought_invoice.purchase_time,
                         'type' : 'brought'
