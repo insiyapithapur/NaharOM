@@ -5,5 +5,5 @@ urlpatterns = [
     path('AdminLogin/',views.AdminLoginAPI),
     path('Invoices/',views.InvoicesAPI),
     # interest credited to current user of fractional unit of invoice
-    path('SalesPurchasedReport/',views.SalesPurchasedReportAPI),
+    path('SalesPurchasedReport/<int:user_id>',views.SalesPurchasedReportAPI),
 ]
