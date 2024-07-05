@@ -133,7 +133,7 @@ def SalesPurchasedReportAPI(request,User_id):
                                 "id" : report.unit.invoice.name,
                             },
                             # 'amount': report.amount,
-                            'no_of_partitions': report.unit,
+                            'no_of_partitions': report.unit.current_owner,
                             # 'sell_date': report.sell_date,
                             # 'sell_time': report.sell_time,
                             # 'purchase_date': report.purchase_date,
