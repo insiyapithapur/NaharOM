@@ -126,21 +126,26 @@ def SalesPurchasedReportAPI(request,User_id):
                     report_list = []
                     for report in sales_purchase_reports:
                         report_data = {
-                            'id': report.id,
-                            'seller': {
-                                "mobile" : report.seller.id,
-                            },
+                    #         'id': report.id,
+                    #         'purchaser_Info' :{
+                    #             'purchaser_id' : report.buyer.id,
+                    #             'purchaser_PanCard_No' :report.buyer
+                    #         },
+                    #         'seller': {
+                    #             "mobile" : report.seller.id,
+                    #         },
                             'buyer': report.buyer.id,
-                            'invoice': {
-                                "id" : report.unit.invoice.name,
-                            },
-                            # 'amount': report.amount,
-                            'no_of_partitions': report.unit.current_owner,
-                            # 'sell_date': report.sell_date,
-                            # 'sell_time': report.sell_time,
-                            # 'purchase_date': report.purchase_date,
-                            'transaction_date': report.transaction_date,
-                            # Add any other fields as required
+                            'buyer_no_of_partitions' : report.buyer.no_of_partitions,
+                    #         'invoice': {
+                    #             "id" : report.unit.invoice.name,
+                    #         },
+                    #         # 'amount': report.amount,
+                    #         'no_of_partitions': report.unit.current_owner,
+                    #         # 'sell_date': report.sell_date,
+                    #         # 'sell_time': report.sell_time,
+                    #         # 'purchase_date': report.purchase_date,
+                    #         'transaction_date': report.transaction_date,
+                    #         # Add any other fields as required
                         }
                         report_list.append(report_data)
 
