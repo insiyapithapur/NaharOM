@@ -127,7 +127,9 @@ def SalesPurchasedReportAPI(request,User_id):
                     for report in sales_purchase_reports:
                         report_data = {
                             'id': report.id,
-                            'seller': report.seller.id,
+                            'seller': {
+                                "mobile" : report.seller.id,
+                            },
                             'buyer': report.buyer.id,
                             'invoice': {
                                 "id" : report.unit.invoice.name,
