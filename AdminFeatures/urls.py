@@ -4,5 +4,5 @@ from . import views
 urlpatterns = [
     path('AdminLogin/',views.AdminLoginAPI),
     path('Invoices/',views.InvoicesAPI),
-    path('SalesPurchasedReport/',views.SalesPurchasedReportAPI),
+    path('SalesPurchasedReport/<int:User_id>',views.SalesPurchasedReportAPI),
 ]

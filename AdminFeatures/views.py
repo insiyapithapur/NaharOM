@@ -103,11 +103,11 @@ def InvoicesAPI(request):
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
     
 @csrf_exempt
-def SalesPurchasedReportAPI(request):
-    if request.method == 'POST':
+def SalesPurchasedReportAPI(request,User_id):
+    if request.method == 'GET':
         try:
-            data = json.loads(request.body)
-            User_id = data.get('user_id')
+            # data = json.loads(request.body)
+            # User_id = data.get('user_id')
 
             if not User_id:
                 return JsonResponse({"message": "User_id is required"}, status=400)
@@ -122,10 +122,31 @@ def SalesPurchasedReportAPI(request):
             
             with transaction.atomic():
                 try:
-                    sales_purchase_report = models.SalePurchaseReport.objects.all()
+                    sales_purchase_reports = models.SalePurchaseReport.objects.all()
+                    report_list = []
+                    for report in sales_purchase_reports:
+                        report_data = {
+                            'id': report.id,
+                            'seller': report.seller.id,
+                            'buyer': report.buyer.id,
+                            'invoice': {
+                                "id" : report.unit.invoice.name,
+                            },
+                            # 'amount': report.amount,
+                            'no_of_partitions': report.unit,
+                            # 'sell_date': report.sell_date,
+                            # 'sell_time': report.sell_time,
+                            # 'purchase_date': report.purchase_date,
+                            'transaction_date': report.transaction_date,
+                            # Add any other fields as required
+                        }
+                        report_list.append(report_data)
+
+                    return JsonResponse({"sales_purchase_reports": report_list}, status=200)
+
                 except models.SalePurchaseReport.DoesNotExist:
                     return JsonResponse({"message": "SalePurchaseReport not found"}, status=404)
-                return JsonResponse({"sales_purchase_report" : sales_purchase_report},status=200)
+                # return JsonResponse({"sales_purchase_report" : sales_purchase_report},status=200)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
