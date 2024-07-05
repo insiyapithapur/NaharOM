@@ -136,6 +136,9 @@ def SalesPurchasedReportAPI(request,User_id):
                     #         },
                             'buyer': report.buyer.id,
                             'buyer_no_of_partitions' : report.buyer.no_of_partitions,
+                            'buyer_user' : {
+                                'user' : report.buyer.user.user.email
+                            }
                     #         'invoice': {
                     #             "id" : report.unit.invoice.name,
                     #         },
