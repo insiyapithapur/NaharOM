@@ -103,11 +103,11 @@ def InvoicesAPI(request):
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
     
 @csrf_exempt
-def SalesPurchasedReportAPI(request,User_id):
-    if request.method == 'GET':
+def SalesPurchasedReportAPI(request):
+    if request.method == 'POST':
         try:
-            # data = json.loads(request.body)
-            # user_id = data.get('user_id')
+            data = json.loads(request.body)
+            User_id = data.get('user_id')
 
             if not User_id:
                 return JsonResponse({"message": "User_id is required"}, status=400)
