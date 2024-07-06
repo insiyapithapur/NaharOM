@@ -1,4 +1,5 @@
 from datetime import time, timezone
+from django.utils import timezone
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser , BaseUserManager , PermissionsMixin
@@ -95,7 +96,7 @@ class BankAccountDetails(models.Model):
 class OutstandingBalance(models.Model):
     bank_acc = models.OneToOneField(BankAccountDetails, on_delete=models.CASCADE)
     balance = models.FloatField()
-    updated_at = models.DateField()
+    updated_at = models.DateField() #updated DateTime
 
 class Invoices(models.Model):
     primary_invoice_id = models.IntegerField()
@@ -103,6 +104,7 @@ class Invoices(models.Model):
     name = models.CharField(max_length=255)
     post_date = models.DateField()
     post_time = models.TimeField()
+    post_date_time = models.DateTimeField()
     interest = models.FloatField()
     xirr = models.FloatField()
     irr = models.FloatField()
@@ -139,6 +141,7 @@ class Buyers(models.Model):
     wallet = models.ForeignKey('OutstandingBalance', on_delete=models.CASCADE)
     purchase_date = models.DateField()
     purchase_time = models.TimeField()
+    purchase_date_time = models.DateTimeField(default=timezone.now())
 
 class Sellers(models.Model):
     User = models.ForeignKey(UserRole, on_delete=models.CASCADE)
@@ -148,6 +151,7 @@ class Sellers(models.Model):
     no_of_partitions = models.IntegerField()
     sell_date = models.DateField()
     sell_time = models.TimeField()
+    sell_date_time = models.DateTimeField(default=timezone.now())
     remaining_partitions = models.IntegerField()
     sold = models.BooleanField(default=False)
 

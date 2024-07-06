@@ -1,3 +1,5 @@
+from datetime import datetime
+from django.utils import timezone
 import json
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -125,30 +127,60 @@ def SalesPurchasedReportAPI(request,User_id):
                     sales_purchase_reports = models.SalePurchaseReport.objects.all()
                     report_list = []
                     for report in sales_purchase_reports:
-                        report_data = {
-                    #         'id': report.id,
-                    #         'purchaser_Info' :{
-                    #             'purchaser_id' : report.buyer.id,
-                    #             'purchaser_PanCard_No' :report.buyer
-                    #         },
-                    #         'seller': {
-                    #             "mobile" : report.seller.id,
-                    #         },
-                            'buyer': report.buyer.id,
-                            'buyer_no_of_partitions' : report.buyer.no_of_partitions,
-                            'buyer_user' : {
-                                'user' : report.buyer.user.user.email
+
+                        try:
+                            pan_card_no = models.PanCardNos.objects.get(user_role=report.buyer.user).pan_card_no
+                            seller_pan_card_no = models.PanCardNos.objects.get(user_role = report.seller.user).pan_card_no
+                        except models.PanCardNos.DoesNotExist:
+                            pan_card_no = None
+                            seller_pan_card_no = None
+
+                        # purchase_datetimet = datetime.combine(report.buyer.purchase_date, report.buyer.purchase_time)
+                        # purchase_datetime = timezone.make_aware(purchase_datetimet, timezone.get_default_timezone())
+                        # print(purchase_datetime)
+                        # print(timezone.now())
+                        # print(report.buyer.purchase_date, "  ",report.buyer.purchase_time)
+                        try:
+                            credited_transaction = models.OutstandingBalanceTransaction.objects.get(
+                                wallet = report.seller.wallet,
+                                time_date="2024-07-02 18:16:09.123273+00"
+                            )
+                            print(credited_transaction)
+                            credited_amount = credited_transaction.creditedAmount
+                        except models.OutstandingBalanceTransaction.DoesNotExist:
+                            credited_amount = None
+
+                        seller_info = {}
+                        if report.seller.User.role == 'individual':
+                            individual_details = models.IndividualDetails.objects.get(user_role=report.seller.User)
+                            seller_info = {
+                                'first_name': individual_details.first_name,
+                                'last_name': individual_details.last_name,
                             }
-                    #         'invoice': {
-                    #             "id" : report.unit.invoice.name,
-                    #         },
-                    #         # 'amount': report.amount,
-                    #         'no_of_partitions': report.unit.current_owner,
-                    #         # 'sell_date': report.sell_date,
-                    #         # 'sell_time': report.sell_time,
-                    #         # 'purchase_date': report.purchase_date,
-                    #         'transaction_date': report.transaction_date,
-                    #         # Add any other fields as required
+                        elif report.seller.User.role == 'company':
+                            company_details = models.CompanyDetails.objects.get(user_role=report.seller.User)
+                            seller_info = {
+                                'company_name': company_details.company_name,
+                            }
+
+                        report_data = {
+                            'id': report.id,
+                            'purchaser_Info' :{
+                                'purchaser_id' : report.buyer.id,
+                                'purchased_units' : report.buyer.no_of_partitions,
+                                'purchased_Date' : report.buyer.purchase_date,
+                                'purchaser_pan_card_no': pan_card_no,
+                                'purchaser_name' : {
+                                    'user' : report.buyer.user.user.mobile
+                                }
+                             },
+                            'seller_info': {
+                                "Value_of_Per_Unit" : ( report.seller.amount ) / (report.seller.no_of_partitions),
+                                'sell_Date' : report.seller.sell_date,
+                                'Name_of_Co.': seller_info,
+                                'Pan_Card_No' : seller_pan_card_no,
+                                'total_amt_credited': credited_amount, #error
+                            },
                         }
                         report_list.append(report_data)
 
