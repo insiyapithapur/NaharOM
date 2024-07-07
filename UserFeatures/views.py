@@ -274,6 +274,7 @@ def GetDetails(request,user_role_id):
                         'Invoice_irr' : invoice.irr,
                         'Invoice_tenure_in_days': invoice.tenure_in_days,
                         'Invoice_expiration_time': invoice.expiration_time,
+                        'Seller_user_id' : seller.User.id,
                         'Seller': {
                             'user_id': seller.User.id,
                             'amount': seller.amount,
