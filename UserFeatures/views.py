@@ -239,7 +239,10 @@ def GetDetails(request,user_role_id):
             for invoice in invoices:
                 invoice_data = {
                     'Invoice_id': invoice.id,
+                    'Invoice_primary_id' : invoice.primary_invoice_id,
                     'Invoice_no_of_partitions': invoice.no_of_partitions,
+                    'Invoice_remaining_partitions': invoice.remaining_partitions,
+                    'Invoice_principle_amt': invoice.principle_amt,
                     'Invoice_name': invoice.name,
                     'Invoice_post_date': invoice.post_date,
                     'Invoice_post_time': invoice.post_time,
@@ -247,10 +250,9 @@ def GetDetails(request,user_role_id):
                     'Invoice_xirr': invoice.xirr, #reveresed IRR
                     'Invoice_irr' : invoice.irr, #reveresed IRR
                     'Invoice_tenure_in_days': invoice.tenure_in_days, #reveresed IRR
-                    'Invoice_principle_amt': invoice.principle_amt,
                     'Invoice_expiration_time': invoice.expiration_time,
-                    'Invoice_remaining_partitions': invoice.remaining_partitions,
                     'Invoice_sold': invoice.sold,
+                    'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
                     'type' : 'CanBuy'
                 }
                 buyer_list.append(invoice_data)
@@ -263,6 +265,7 @@ def GetDetails(request,user_role_id):
                     invoice = seller.Invoice
                     invoice_data = {
                         'Invoice_id': invoice.id,
+                        'Invoice_primary_id' : invoice.primary_invoice_id,
                         'Invoice_name': invoice.name,
                         'Invoice_Admin_post_date': invoice.post_date,
                         'Invoice_Admin_post_time': invoice.post_time,
@@ -276,9 +279,11 @@ def GetDetails(request,user_role_id):
                             'amount': seller.amount,
                             'sell_date': seller.sell_date,
                             'sell_time': seller.sell_time,
+                            'no_of_partition' :seller.no_of_partitions,
                             'remaining_partitions': seller.remaining_partitions,
                             'sold': seller.sold,
                         },
+                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
                         'type' : 'CanBuy'
                     }
                 seller_list.append(invoice_data)
@@ -287,11 +292,10 @@ def GetDetails(request,user_role_id):
             Brought_invoices = models.Buyers.objects.filter(user=user_role_id)
             Brought_list = []
             for Brought_invoice in Brought_invoices:
+                    user_id = Brought_invoice.user.id
                     Buyer_data = {
-                        'id': Brought_invoice.id,
-                        'User': {
-                            'user_id': Brought_invoice.user.id
-                        },
+                        'Buyer_id': Brought_invoice.id,
+                        'user_id' : user_id,
                         'no_of_puchased_partitions': Brought_invoice.no_of_partitions,
                         'Total_Purchased_Amt': Brought_invoice.total_amount_invested,
                         'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
@@ -315,6 +319,7 @@ def GetDetails(request,user_role_id):
             for seller in posted_for_sell:
                 if seller.User.id == user_role_id:
                     invoice = seller.Invoice
+                    user_id = seller.User.id
                     posted_for_sell_list_data = {
                         'Invoice_id': invoice.id,
                         'Invoice_name': invoice.name,
@@ -324,9 +329,12 @@ def GetDetails(request,user_role_id):
                         'Invoice_xirr': invoice.xirr,
                         'Invoice_tenure_in_days': invoice.tenure_in_days,
                         'Invoice_expiration_time': invoice.expiration_time,
-                        'amount': seller.amount,
+                        'seller_id' : seller.id,
+                        'user_id': user_id,
+                        'Selling_amount': seller.amount,
                         'sell_date': seller.sell_date,
                         'sell_time': seller.sell_time,
+                        'no_of_partition_for_sell' : seller.no_of_partitions,
                         'remaining_partitions': seller.remaining_partitions,
                         'sold': seller.sold,
                         'type' : 'Posted for sell'
