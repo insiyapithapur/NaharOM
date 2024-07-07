@@ -238,19 +238,19 @@ def GetDetails(request,user_role_id):
             buyer_list = []
             for invoice in invoices:
                 invoice_data = {
-                    'id': invoice.id,
-                    'no_of_partitions': invoice.no_of_partitions,
-                    'name': invoice.name,
-                    'post_date': invoice.post_date,
-                    'post_time': invoice.post_time,
-                    'interest': invoice.interest,
-                    'xirr': invoice.xirr,
-                    'irr' : invoice.irr,
-                    'tenure_in_days': invoice.tenure_in_days,
-                    'principle_amt': invoice.principle_amt,
-                    'expiration_time': invoice.expiration_time,
-                    'remaining_partitions': invoice.remaining_partitions,
-                    'sold': invoice.sold,
+                    'Invoice_id': invoice.id,
+                    'Invoice_no_of_partitions': invoice.no_of_partitions,
+                    'Invoice_name': invoice.name,
+                    'Invoice_post_date': invoice.post_date,
+                    'Invoice_post_time': invoice.post_time,
+                    'Invoice_interest': invoice.interest,
+                    'Invoice_xirr': invoice.xirr, #reveresed IRR
+                    'Invoice_irr' : invoice.irr, #reveresed IRR
+                    'Invoice_tenure_in_days': invoice.tenure_in_days, #reveresed IRR
+                    'Invoice_principle_amt': invoice.principle_amt,
+                    'Invoice_expiration_time': invoice.expiration_time,
+                    'Invoice_remaining_partitions': invoice.remaining_partitions,
+                    'Invoice_sold': invoice.sold,
                     'type' : 'CanBuy'
                 }
                 buyer_list.append(invoice_data)
@@ -262,23 +262,23 @@ def GetDetails(request,user_role_id):
                 if seller.User.id != user_role_id:
                     invoice = seller.Invoice
                     invoice_data = {
-                        'id': invoice.id,
-                        'name': invoice.name,
-                        'Admin_post_date': invoice.post_date,
-                        'Admin_post_time': invoice.post_time,
-                        'interest': invoice.interest,
-                        'xirr': invoice.xirr,
-                        'irr' : invoice.irr,
-                        'tenure_in_days': invoice.tenure_in_days,
-                        'expiration_time': invoice.expiration_time,
-                        'User': {
-                            'id': seller.User.id
+                        'Invoice_id': invoice.id,
+                        'Invoice_name': invoice.name,
+                        'Invoice_Admin_post_date': invoice.post_date,
+                        'Invoice_Admin_post_time': invoice.post_time,
+                        'Invoice_interest': invoice.interest,
+                        'Invoice_xirr': invoice.xirr,
+                        'Invoice_irr' : invoice.irr,
+                        'Invoice_tenure_in_days': invoice.tenure_in_days,
+                        'Invoice_expiration_time': invoice.expiration_time,
+                        'Seller': {
+                            'user_id': seller.User.id,
+                            'amount': seller.amount,
+                            'sell_date': seller.sell_date,
+                            'sell_time': seller.sell_time,
+                            'remaining_partitions': seller.remaining_partitions,
+                            'sold': seller.sold,
                         },
-                        'amount': seller.amount,
-                        'sell_date': seller.sell_date,
-                        'sell_time': seller.sell_time,
-                        'remaining_partitions': seller.remaining_partitions,
-                        'sold': seller.sold,
                         'type' : 'CanBuy'
                     }
                 seller_list.append(invoice_data)
@@ -290,18 +290,18 @@ def GetDetails(request,user_role_id):
                     Buyer_data = {
                         'id': Brought_invoice.id,
                         'User': {
-                            'id': Brought_invoice.user.id
+                            'user_id': Brought_invoice.user.id
                         },
                         'no_of_puchased_partitions': Brought_invoice.no_of_partitions,
                         'Total_Purchased_Amt': Brought_invoice.total_amount_invested,
                         'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
                         'InvoiceDetails' : {
-                            'id' : Brought_invoice.invoice.id,
-                            'interest' : Brought_invoice.invoice.interest,
-                            'xirr' : Brought_invoice.invoice.xirr,
-                            'irr' : Brought_invoice.invoice.irr,
-                            'PrincipleAmt' : Brought_invoice.invoice.principle_amt,
-                            'No_of_Units' : Brought_invoice.invoice.no_of_partitions,
+                            'Invoice_id' : Brought_invoice.invoice.id,
+                            'Invoice_interest' : Brought_invoice.invoice.interest,
+                            'Invoice_xirr' : Brought_invoice.invoice.xirr,
+                            'Invoice_irr' : Brought_invoice.invoice.irr,
+                            'Invoice_PrincipleAmt' : Brought_invoice.invoice.principle_amt,
+                            'Invoice_No_of_Units' : Brought_invoice.invoice.no_of_partitions,
                         },
                         'purchase_date': Brought_invoice.purchase_date,
                         'purchase_time': Brought_invoice.purchase_time,
@@ -316,14 +316,14 @@ def GetDetails(request,user_role_id):
                 if seller.User.id == user_role_id:
                     invoice = seller.Invoice
                     posted_for_sell_list_data = {
-                        'id': invoice.id,
-                        'name': invoice.name,
-                        'Admin_post_date': invoice.post_date,
-                        'Admin_post_time': invoice.post_time,
-                        'interest': invoice.interest,
-                        'xirr': invoice.xirr,
-                        'tenure_in_days': invoice.tenure_in_days,
-                        'expiration_time': invoice.expiration_time,
+                        'Invoice_id': invoice.id,
+                        'Invoice_name': invoice.name,
+                        'Invoice_Admin_post_date': invoice.post_date,
+                        'Invoice_Admin_post_time': invoice.post_time,
+                        'Invoice_interest': invoice.interest,
+                        'Invoice_xirr': invoice.xirr,
+                        'Invoice_tenure_in_days': invoice.tenure_in_days,
+                        'Invoice_expiration_time': invoice.expiration_time,
                         'amount': seller.amount,
                         'sell_date': seller.sell_date,
                         'sell_time': seller.sell_time,
