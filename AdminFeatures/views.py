@@ -68,6 +68,19 @@ def ExtractInvoicesAPI(request):
 with open(os.path.join(os.path.dirname(__file__), 'invoices.json')) as f:
     invoices_data = json.load(f)
 
+def filter_invoice_data(invoice):
+    product = invoice.get('product', {})
+    return {
+        "primary_invoice_id": invoice['id'],
+        "product_name": product.get('name'),
+        "irr": product.get('interest_rate_fixed'),
+        "tenure_in_days": product.get('tenure_in_days'),
+        "interest_rate" : 0,
+        "xirr" : 0,
+        "principle_amt" : 0 ,  
+        "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days'))
+    }
+
 @csrf_exempt
 def GetInvoicesAPI(request, user_id, primary_invoice_id=None):
     if request.method == 'GET':
@@ -87,10 +100,12 @@ def GetInvoicesAPI(request, user_id, primary_invoice_id=None):
                 invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
                 if not invoice_data:
                     return JsonResponse({"message": "Invoice not found"}, status=404)
-                return JsonResponse(invoice_data, status=200)
+                filtered_invoice_data = filter_invoice_data(invoice_data)
+                return JsonResponse(filtered_invoice_data, status=200)
             else:
-                return JsonResponse(invoices_data['filtered_invoices'], safe=False, status=200)
-
+                filtered_invoices_data = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
+                return JsonResponse(filtered_invoices_data, safe=False, status=200)
+            
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
