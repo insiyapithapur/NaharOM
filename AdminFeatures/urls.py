@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('AdminLogin/',views.AdminLoginAPI),
+    path('PrimaryInvoices/',views.ExtractInvoicesAPI),
     path('Invoices/',views.InvoicesAPI),
     path('SalesPurchasedReport/<int:User_id>',views.SalesPurchasedReportAPI),
 ]

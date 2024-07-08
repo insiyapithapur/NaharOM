@@ -37,6 +37,32 @@ def AdminLoginAPI(request):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+    
+@csrf_exempt
+def ExtractInvoicesAPI(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            if not isinstance(data, list):
+                return JsonResponse({"message": "Invalid input format, expected a list of objects"}, status=400)
+
+            filtered_invoices = []
+
+            for company in data:
+                invoices = company.get('invoices', [])
+                for invoice in invoices:
+                    if invoice.get('product') is not None:
+                        filtered_invoices.append(invoice)
+            
+            return JsonResponse({"filtered_invoices": filtered_invoices}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
 @csrf_exempt
 def InvoicesAPI(request):
