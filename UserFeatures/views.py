@@ -253,6 +253,7 @@ def GetDetails(request,user_role_id):
                     'Invoice_expiration_time': invoice.expiration_time,
                     'Invoice_sold': invoice.sold,
                     'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
+                    'isAdmin' : True ,
                     'type' : 'CanBuy'
                 }
                 buyer_list.append(invoice_data)
@@ -282,6 +283,7 @@ def GetDetails(request,user_role_id):
                         'remaining_partitions_for_selling': seller.remaining_partitions,
                         'sold': seller.sold,
                         'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
+                        'isAdmin' : False ,
                         'type' : 'CanBuy'
                     }
                 seller_list.append(invoice_data)
@@ -313,6 +315,7 @@ def GetDetails(request,user_role_id):
                         # },
                         'purchase_date': Brought_invoice.purchase_date,
                         'purchase_time': Brought_invoice.purchase_time,
+                        'isAdmin' : False ,
                         'type' : 'brought'
                     }
                     Brought_list.append(Buyer_data)
@@ -341,6 +344,7 @@ def GetDetails(request,user_role_id):
                         'no_of_partition_for_sell' : seller.no_of_partitions,
                         'remaining_partitions': seller.remaining_partitions,
                         'sold': seller.sold,
+                        'isAdmin' : False ,
                         'type' : 'Posted for sell'
                     }
                 posted_for_sell_list.append(posted_for_sell_list_data)
