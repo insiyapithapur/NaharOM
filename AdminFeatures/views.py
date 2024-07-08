@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from django.utils import timezone
 import json
 from django.http import JsonResponse
@@ -64,6 +65,9 @@ def ExtractInvoicesAPI(request):
     else:
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
+with open(os.path.join(os.path.dirname(__file__), 'invoices.json')) as f:
+    invoices_data = json.load(f)
+    
 @csrf_exempt
 def InvoicesAPI(request):
     if request.method == 'POST':
@@ -93,8 +97,25 @@ def InvoicesAPI(request):
             tenure_in_days = data.get('tenure_in_days')
             principle_amt = data.get('principle_amt')
             expiration_time = data.get('expiration_time')
+            # invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
+            # print(invoice_data)
 
-            if not all([primary_invoice_id, no_of_fractional_units , name, interest_rate, xirr, tenure_in_days, principle_amt, expiration_time]):
+            # if not invoice_data or not invoice_data.get('product'):
+            #     return JsonResponse({"message": "Invoice data not found or product is null"}, status=404)
+
+            # product_data = invoice_data['product']
+            # post_date = timezone.now().date()
+            # post_time = timezone.now().time()
+            # name = product_data['name']
+            # print(name)
+            # interest_rate = 0
+            # xirr = 0 
+            # irr = product_data['interest_rate_fixed']
+            # tenure_in_days = product_data['tenure_in_days']
+            # principle_amt = 0  # Set principle_amt to 0 or fetch it from your logic
+            # expiration_time = timezone.now() + timezone.timedelta(days=tenure_in_days)
+
+            if not all([primary_invoice_id, no_of_fractional_units]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
             
             print("before create")
