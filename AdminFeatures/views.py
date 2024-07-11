@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.db import transaction
 
 @csrf_exempt
-def AdminLoginAPI(request):
+def LoginAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -75,9 +75,9 @@ def filter_invoice_data(invoice):
         "product_name": product.get('name'),
         "irr": product.get('interest_rate_fixed'),
         "tenure_in_days": product.get('tenure_in_days'),
-        "interest_rate" : 0,
-        "xirr" : 0,
-        "principle_amt" : 0 ,  
+        "interest_rate" : product.get('interest_rate'),
+        "xirr" : product.get('xirr_in_percentage'),
+        "principle_amt" : product.get('principle_amt'),
         "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days'))
     }
 
