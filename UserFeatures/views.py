@@ -507,7 +507,6 @@ def TobuyAPI(request):
             wallet_id = data.get('wallet_id')
             seller_id = data.get('seller_id') #if 2nd buyer
             no_of_partition = data.get('no_of_partition')
-            total_amount_invested = data.get('total_amount_invested')
             purchase_date = timezone.now().date()
             purchase_time = timezone.now().time()
 
@@ -526,15 +525,18 @@ def TobuyAPI(request):
             except models.OutstandingBalance.DoesNotExist:
                 return JsonResponse({"message": "Buyer Wallet not found"}, status=404)
 
-            if not all([no_of_partition, total_amount_invested]):
-                return JsonResponse({"message": "All fields are required"}, status=400)
-
             with transaction.atomic():
                 if seller_id:
                     try:
                         seller = models.Sellers.objects.get(id=seller_id)
                     except models.Sellers.DoesNotExist:
                         return JsonResponse({"message": "Seller not found"}, status=404)
+                    
+                    print("seller.no_of_partitions ",seller.no_of_partitions)
+                    print("seller.amount ",seller.amount)
+                    Fractional_unit_Value = (seller.amount) / (seller.no_of_partitions)
+                    total_amount_invested =  Fractional_unit_Value * no_of_partition
+
                     
                     if seller.remaining_partitions < no_of_partition :
                         return JsonResponse({"message": "Not enough fractional units available"}, status=400)
@@ -613,11 +615,20 @@ def TobuyAPI(request):
                     )
 
                     return JsonResponse({"message": "Transaction completed successfully", "buyer_id": buyer.id}, status=201)
+                # 1st buyer
                 else:
+                    print("invoice.principle_amt" , invoice.principle_amt)
+                    print("invoice.principle_amt " ,invoice.no_of_partitions)
+
+                    Fractional_unit_Value = (invoice.principle_amt) / (invoice.no_of_partitions)
+                    total_amount_invested = Fractional_unit_Value * no_of_partition
+                    print(total_amount_invested)
+
                     fractional_units = models.FractionalUnits.objects.filter(
-                        current_owner=None, sold=False)[:no_of_partition]
+                        current_owner=None, sold=False , invoice = invoice)[:no_of_partition]
                     fractional_units_count = fractional_units.count()
-                    # print("fractional_units_count ",fractional_units_count)
+
+                    print("fractional_units_count ",fractional_units_count)
 
                     if fractional_units_count < no_of_partition :
                         return JsonResponse({"message": "Not enough fractional units available"}, status=400)
@@ -656,8 +667,10 @@ def TobuyAPI(request):
                         invoice=invoice,
                         time_date=timezone.now()
                     )
+
                     Remaining_fraction  = models.FractionalUnits.objects.filter(
                         sold=False , invoice = invoice)
+                    print("Remaining_fraction ",Remaining_fraction)
                     
                     Remaining_fraction_count = Remaining_fraction.count()
                     print("Remaining_fraction_count ",Remaining_fraction_count)
@@ -669,6 +682,7 @@ def TobuyAPI(request):
                         invoice.remaining_partitions = 0
                         invoice.sold = True
                         invoice.save()
+
                     return JsonResponse({"message": "Transaction completed successfully", "buyer_id": buyer.id}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
