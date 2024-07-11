@@ -144,11 +144,11 @@ def PostInvoiceAPI(request):
             post_date = timezone.now().date()
             post_time = timezone.now().time()
             name = product_data['name']
-            interest_rate = 0
-            xirr = 0 
+            interest_rate = product_data['interest_rate']
+            xirr = product_data['xirr_in_percentage']
             irr = product_data['interest_rate_fixed']
             tenure_in_days = product_data['tenure_in_days']
-            principle_amt = 0  
+            principle_amt = product_data['principle_amt']
             expiration_time = timezone.now() + timezone.timedelta(days=tenure_in_days)
 
             if not all([primary_invoice_id, no_of_fractional_units]):
@@ -156,6 +156,7 @@ def PostInvoiceAPI(request):
             
             with transaction.atomic():
                 print("before create")
+                # already posted case check
                 invoice = models.Invoices.objects.create(
                     primary_invoice_id=primary_invoice_id,
                     no_of_partitions=no_of_fractional_units,
