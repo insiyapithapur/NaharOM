@@ -291,8 +291,10 @@ def UserManagementAPI(request):
             all_user_details = []
 
             for user in users:
+                print(user.mobile)
                 try:
                     user_role = models.UserRole.objects.get(user=user)
+                    print(user.id)
                     user_details = {
                         "user_id": user.id,
                         "user_role": user_role.role,
@@ -300,24 +302,28 @@ def UserManagementAPI(request):
                         "date_of_joining": user.created_at,
                     }
 
-                    if user_role.role == 'company':
-                        company_details = models.CompanyDetails.objects.get(user_role=user_role)
+                    if user_role.role == 'Company':
+                        # company_details = models.CompanyDetails.objects.get(user_role=user_role)
                         user_details.update({
-                            "company_name": company_details.company_name,
+                            # "company_name": company_details.company_name,
+                            "company_name": "ABC",
                         })
-                    elif user_role.role == 'individual':
-                        individual_details = models.IndividualDetails.objects.get(user_role=user_role)
+                    elif user_role.role == 'Individual':
+                        # individual_details = models.IndividualDetails.objects.get(user_role=user_role)
                         user_details.update({
-                            "first_name": individual_details.first_name,
-                            "last_name": individual_details.last_name,
+                            # "first_name": individual_details.first_name,
+                            # "last_name": individual_details.last_name,
+                            "first_name": "First name",
+                            "last_name": "last name",
                         })
-                        try:
-                            pan_card = models.PanCardNos.objects.get(user_role=user_role)
-                            user_details["pan_card_no"] = pan_card.pan_card_no
-                        except models.PanCardNos.DoesNotExist:
-                            user_details["pan_card_no"] = None
+                        
+                    try:
+                        # pan_card = models.PanCardNos.objects.get(user_role=user_role)
+                        user_details["pan_card_no"] = "dekkf cvk f"
+                    except models.PanCardNos.DoesNotExist:
+                        user_details["pan_card_no"] = "43245mdmd"
 
-                    # permissions = {
+                    # permissions = {s
                     #     "is_admin": user.is_admin,
                     #     "is_staff": user.is_staff,
                     #     "is_active": user.is_active
