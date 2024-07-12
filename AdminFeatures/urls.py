@@ -10,4 +10,5 @@ urlpatterns = [
     # used to store invoice that admin will post
     path('PostInvoice/',views.PostInvoiceAPI),
     path('SalesPurchasedReport/<int:User_id>',views.SalesPurchasedReportAPI),
+    path('UserManagement/',views.UserManagementAPI),
 ]

@@ -282,3 +282,60 @@ def SalesPurchasedReportAPI(request,User_id):
 
     else:
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
+    
+@csrf_exempt
+def UserManagementAPI(request):
+    if request.method == 'GET':
+        try:
+            users = models.User.objects.all()
+            all_user_details = []
+
+            for user in users:
+                try:
+                    user_role = models.UserRole.objects.get(user=user)
+                    user_details = {
+                        "user_id": user.id,
+                        "user_role": user_role.role,
+                        "email": user.email,
+                        "date_of_joining": user.created_at,
+                    }
+
+                    if user_role.role == 'company':
+                        company_details = models.CompanyDetails.objects.get(user_role=user_role)
+                        user_details.update({
+                            "company_name": company_details.company_name,
+                        })
+                    elif user_role.role == 'individual':
+                        individual_details = models.IndividualDetails.objects.get(user_role=user_role)
+                        user_details.update({
+                            "first_name": individual_details.first_name,
+                            "last_name": individual_details.last_name,
+                        })
+                        try:
+                            pan_card = models.PanCardNos.objects.get(user_role=user_role)
+                            user_details["pan_card_no"] = pan_card.pan_card_no
+                        except models.PanCardNos.DoesNotExist:
+                            user_details["pan_card_no"] = None
+
+                    # permissions = {
+                    #     "is_admin": user.is_admin,
+                    #     "is_staff": user.is_staff,
+                    #     "is_active": user.is_active
+                    # }
+                    user_details["is_admin"] = user.is_admin
+
+                    all_user_details.append(user_details)
+
+                except models.UserRole.DoesNotExist:
+                    continue  
+                except models.CompanyDetails.DoesNotExist:
+                    continue  
+                except models.IndividualDetails.DoesNotExist:
+                    continue  
+
+            return JsonResponse(all_user_details, safe=False, status=200)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
