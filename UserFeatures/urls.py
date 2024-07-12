@@ -12,4 +12,5 @@ urlpatterns = [
     # path('BuyerIRR/<int:invoice_id>',views.BuyerIRRAPI),
     path('GetDetails/<int:user_role_id>',views.GetDetails),
     path('AdminSettings/', views.create_entry, name='create_entry'),
+    path('showFunds/<int:user_role_id>',views.ShowFundsAPI),
 ]

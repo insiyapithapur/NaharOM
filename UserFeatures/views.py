@@ -229,6 +229,21 @@ def Credit_FundsAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
+def ShowFundsAPI(request,user_role_id):
+    if request.method == 'GET':
+        try:
+            try:
+                bank_acc = models.BankAccountDetails.objects.get(user_role = user_role_id)
+            except models.BankAccountDetails.DoesNotExist:
+                return JsonResponse({"message":"User or bank account doesn't exist"},status=404)
+            balance = models.OutstandingBalance.objects.get(bank_acc= bank_acc).balance
+            return JsonResponse({"Balance":balance},status = 200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET method is allowed"}, status=405)
+
+@csrf_exempt
 def GetDetails(request,user_role_id):
     if request.method == 'GET':
         try:
