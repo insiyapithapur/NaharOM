@@ -215,7 +215,7 @@ def PostInvoiceAPI(request):
                 ]
                 models.FractionalUnits.objects.bulk_create(fractional_units)
 
-            return JsonResponse({"message": "Invoice created successfully", "invoice_id": invoice.id}, status=201)
+            return JsonResponse({"message": "Invoice created successfully", "Secondary_invoice_id": invoice.id}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
