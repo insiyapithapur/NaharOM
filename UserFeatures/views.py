@@ -771,7 +771,7 @@ def ToSellAPI(request):
 
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-
+    
 @csrf_exempt
 def LedgerAPI(request, user_role_id):
     if request.method == 'GET':
@@ -782,12 +782,10 @@ def LedgerAPI(request, user_role_id):
                 return JsonResponse({"message": "User role not found"}, status=404)
 
             bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-            
             if not bank_accounts.exists():
                 return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
 
             wallets = models.OutstandingBalance.objects.filter(bank_acc__in=bank_accounts)
-            
             if not wallets.exists():
                 return JsonResponse({"message": "No wallets found for this user role"}, status=404)
 
@@ -807,13 +805,16 @@ def LedgerAPI(request, user_role_id):
                     "invoice": transaction.invoice.name if transaction.invoice else None,
                     "time_date": transaction.time_date,
                 })
-                wallet_balance = models.OutstandingBalance.objects.get(bank_acc=bank_accounts)
-            return JsonResponse({"transactions": transactions_data , "Balance" : wallet_balance.balance}, status=200)
+
+            total_balance = sum(wallet.balance for wallet in wallets)
+
+            return JsonResponse({"transactions": transactions_data, "Balance": total_balance}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
-        return JsonResponse({"message": "Only GET method is allowed"}, status=405) 
+        return JsonResponse({"message": "Only GET method is allowed"}, status=405)
+
 
 # @csrf_exempt
 # def BuyerIRRAPI(request,invoice_id):

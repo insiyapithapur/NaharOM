@@ -70,6 +70,7 @@ with open(os.path.join(os.path.dirname(__file__), 'invoices.json')) as f:
 
 def filter_invoice_data(invoice):
     product = invoice.get('product', {})
+    # print("product: ",product)
     return {
         "primary_invoice_id": invoice['id'],
         "product_name": product.get('name'),
@@ -78,7 +79,8 @@ def filter_invoice_data(invoice):
         "interest_rate" : product.get('interest_rate'),
         "xirr" : product.get('xirr_in_percentage'),
         "principle_amt" : product.get('principle_amt'),
-        "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days'))
+        "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days')),
+        "fractionalized" : False
     }
 
 @csrf_exempt
@@ -113,6 +115,38 @@ def GetInvoicesAPI(request, user_id, primary_invoice_id=None):
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     
+@csrf_exempt
+def InvoiceAPI(request,user_id, primary_invoice_id=None):
+    if request.method == 'GET':
+        try:
+            try:
+                user = models.User.objects.get(id=user_id)
+            except models.User.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+
+            if not user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+
+            if primary_invoice_id:
+                invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
+                if not invoice_data:
+                    return JsonResponse({"message": "Invoice not found"}, status=404)
+                filtered_invoice_data = filter_invoice_data(invoice_data)
+                return JsonResponse(filtered_invoice_data, status=200)
+            else:
+                filtered_invoices_data = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
+                print(filter_invoice_data)
+                fractionalized_invoice_data = models.Invoices.objects.all().values()
+                for invoice in fractionalized_invoice_data:
+                    invoice['fractionalized_data'] = True  
+                combined_data = filtered_invoices_data + list(fractionalized_invoice_data)
+                return JsonResponse(combined_data, safe=False, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
 @csrf_exempt
 def PostInvoiceAPI(request):
