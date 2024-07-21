@@ -80,7 +80,7 @@ def filter_invoice_data(invoice):
         "xirr" : product.get('xirr_in_percentage'),
         "principle_amt" : product.get('principle_amt'),
         "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days')),
-        "fractionalized" : False
+        "type" : False
     }
 
 @csrf_exempt
@@ -138,7 +138,7 @@ def InvoiceAPI(request,user_id, primary_invoice_id=None):
                 print(filter_invoice_data)
                 fractionalized_invoice_data = models.Invoices.objects.all().values()
                 for invoice in fractionalized_invoice_data:
-                    invoice['fractionalized_data'] = True  
+                    invoice['type'] = True  
                 combined_data = filtered_invoices_data + list(fractionalized_invoice_data)
                 return JsonResponse(combined_data, safe=False, status=200)
         except json.JSONDecodeError:

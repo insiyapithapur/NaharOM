@@ -7,6 +7,7 @@ from . import models
 from django.utils import timezone
 from django.db import transaction
 from django.utils.dateparse import parse_time
+import requests
 
 @csrf_exempt
 def RegisterAPI(request):
@@ -860,6 +861,85 @@ def create_entry(request):
             new_entry = models.AdminSettings.objects.create(interest_cut_off_time=interest_cut_off_time)
             return JsonResponse({"message": "Entry created successfully", "id": new_entry.id ,'interest_cut_of_time' : new_entry.interest_cut_off_time}, status=201)
         
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+@csrf_exempt
+def GenerateOtpAPI(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            country_code = data.get('countryCode')
+            print(country_code)
+            mobile_number = data.get('mobileNumber')
+            print(mobile_number)
+
+            if not country_code or not mobile_number:
+                return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
+
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
+            headers = {
+                'Authorization': '0RDcUYz86vApDQQdUUxgxnjPcEbImZD4',
+                'Content-Type': 'application/json'
+            }
+
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number
+            }
+
+            response = requests.post(url, headers=headers, json=payload)
+            print(response.json)
+
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({"message": "Failed to generate OTP"}, status=response.status_code)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+    
+@csrf_exempt
+def VerifyOtpAPI(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            country_code = data.get('countryCode')
+            mobile_number = data.get('mobileNumber')
+            reference_id = data.get('referenceId')
+            otp = data.get('otp')
+            extra_fields = data.get('extraFields')
+
+            if not all([country_code, mobile_number, reference_id, otp, extra_fields]):
+                return JsonResponse({"message": "All fields are required"}, status=400)
+
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
+            headers = {
+                'Authorization': '0RDcUYz86vApDQQdUUxgxnjPcEbImZD4',
+                'Content-Type': 'application/json'
+            }
+
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number,
+                "referenceId": reference_id,
+                "otp": otp,
+                "extraFields": extra_fields
+            }
+
+            response = requests.post(url, headers=headers, json=payload)
+
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({"message": "Failed to verify OTP"}, status=response.status_code)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

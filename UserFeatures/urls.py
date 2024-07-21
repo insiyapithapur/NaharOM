@@ -13,4 +13,6 @@ urlpatterns = [
     path('GetDetails/<int:user_role_id>',views.GetDetails),
     path('AdminSettings/', views.create_entry, name='create_entry'),
     path('showFunds/<int:user_role_id>',views.ShowFundsAPI),
+    path('generateOTP/',views.GenerateOtpAPI),
+    path('verifyOtp/',views.VerifyOtpAPI),
 ]
