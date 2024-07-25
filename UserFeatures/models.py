@@ -102,7 +102,7 @@ class OutstandingBalance(models.Model):
 class Invoices(models.Model):
     primary_invoice_id = models.IntegerField()
     no_of_partitions = models.IntegerField()
-    name = models.CharField(max_length=255)
+    product_name = models.CharField(max_length=255)
     post_date = models.DateField()
     post_time = models.TimeField()
     post_date_time = models.DateTimeField()
