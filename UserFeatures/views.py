@@ -263,7 +263,7 @@ def GetDetails(request,user_role_id):
                     'Invoice_no_of_partitions': invoice.no_of_partitions,
                     'Invoice_remaining_partitions': invoice.remaining_partitions,
                     'Invoice_principle_amt': invoice.principle_amt,
-                    'Invoice_name': invoice.name,
+                    'Invoice_name': invoice.product_name,
                     'Invoice_post_date': invoice.post_date,
                     'Invoice_post_time': invoice.post_time,
                     'Invoice_interest': invoice.interest,
@@ -287,7 +287,7 @@ def GetDetails(request,user_role_id):
                     invoice_data = {
                         'Invoice_id': invoice.id,
                         'Invoice_primary_id' : invoice.primary_invoice_id,
-                        'Invoice_name': invoice.name,
+                        'Invoice_name': invoice.product_name,
                         'Invoice_Admin_post_date': invoice.post_date,
                         'Invoice_Admin_post_time': invoice.post_time,
                         'Invoice_interest': invoice.interest,
@@ -349,7 +349,7 @@ def GetDetails(request,user_role_id):
                     user_id = seller.User.id
                     posted_for_sell_list_data = {
                         'Invoice_id': invoice.id,
-                        'Invoice_name': invoice.name,
+                        'Invoice_name': invoice.product_name,
                         'Invoice_Admin_post_date': invoice.post_date,
                         'Invoice_Admin_post_time': invoice.post_time,
                         'Invoice_interest': invoice.interest,
