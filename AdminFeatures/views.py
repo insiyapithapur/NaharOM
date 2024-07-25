@@ -386,9 +386,9 @@ def UserManagementAPI(request):
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
-def generate_token(admin_id, user_id):
+def generate_token(admin_id, user_role_id):
     timestamp = int(time.time())
-    token = f"{admin_id}:{user_id}:{timestamp}"
+    token = f"{admin_id}:{user_role_id}:{timestamp}"
     signature = hashlib.sha256(f"{token}:{settings.SECRET_KEY}".encode()).hexdigest()
     token_with_signature = f"{token}:{signature}"
     encoded_token = base64.urlsafe_b64encode(token_with_signature.encode()).decode()
@@ -413,10 +413,19 @@ def decode_token(token):
         return "failed to decode the token"
     
 @csrf_exempt
-def GenerateTokenAPI(request, admin_id, user_id):
+def GenerateTokenAPI(request, admin_id, user_role_id):
     if request.method == 'GET':
-        token = generate_token(admin_id, user_id)
-        # admin_id , user_id exist check?
+        try:
+            admin = models.User.objects.get(id=admin_id, is_superadmin=True)
+        except models.User.DoesNotExist:
+            return JsonResponse({"message": "Admin not found or not authorized"}, status=404)
+
+        try:
+            user = models.UserRole.objects.get(id=user_role_id)
+        except models.UserRole.DoesNotExist:
+            return JsonResponse({"message": "User not found"}, status=404)
+        
+        token = generate_token(admin_id, user_role_id)
         return JsonResponse({"token": token}, status=200)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)

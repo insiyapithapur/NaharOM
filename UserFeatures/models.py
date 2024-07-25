@@ -26,7 +26,7 @@ class CustomUserManager(BaseUserManager):
         Create and return a superuser with an email, mobile, and password.
         """
         extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_superadmin', True)
         extra_fields.setdefault('is_admin', True)
 
         if extra_fields.get('is_staff') is not True:
@@ -40,6 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
     mobile = models.CharField(max_length=15, unique=True)
     is_admin = models.BooleanField(default=False)
+    is_superadmin =  models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

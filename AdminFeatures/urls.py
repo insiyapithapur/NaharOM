@@ -12,6 +12,6 @@ urlpatterns = [
     path('PostInvoice/',views.PostInvoiceAPI),
     path('SalesPurchasedReport/<int:User_id>/',views.SalesPurchasedReportAPI),
     path('UserManagement/',views.UserManagementAPI),
-    path('GenerateToken/<int:admin_id>/<int:user_id>/',views.GenerateTokenAPI),
+    path('GenerateToken/<int:admin_id>/<int:user_role_id>/',views.GenerateTokenAPI),
     path('userPersonate/',views.UserPersonateAPI),
 ]
