@@ -401,14 +401,14 @@ def decode_token(token):
         if len(parts) != 4:
             return None
         
-        admin_id, user_id, timestamp, received_signature = parts
-        token_without_signature = f"{admin_id}:{user_id}:{timestamp}"
+        admin_id, user_role_id, timestamp, received_signature = parts
+        token_without_signature = f"{admin_id}:{user_role_id}:{timestamp}"
         expected_signature = hashlib.sha256(f"{token_without_signature}:{settings.SECRET_KEY}".encode()).hexdigest()
         
         if received_signature != expected_signature:
-            return None
+            return "token is invalid"
         
-        return admin_id, user_id, int(timestamp)
+        return admin_id, user_role_id, int(timestamp)
     except Exception as e:
         return "failed to decode the token"
     
@@ -431,31 +431,31 @@ def GenerateTokenAPI(request, admin_id, user_role_id):
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     
 @csrf_exempt
-def UserPersonateAPI(request):
-    token = request.GET.get('token')
-    if not token:
-        return JsonResponse({"message": "Token is required"}, status=400)
+def UserPersonateAPI(request,token):
+    if request.method == 'GET':
+        if not token:
+            return JsonResponse({"message": "Token is required"}, status=400)
 
-    decoded_data = decode_token(token)
-    if not decoded_data:
-        return JsonResponse({"message": "Invalid token"}, status=400)
+        decoded_data = decode_token(token)
+        if not decoded_data:
+            return JsonResponse({"message": "Invalid token"}, status=400)
 
-    admin_id, user_id, timestamp = decoded_data
+        admin_id, user_role_id, timestamp = decoded_data
 
-    try:
-        admin = models.User.objects.get(id=admin_id, is_superuser=True)
-    except models.User.DoesNotExist:
-        return JsonResponse({"message": "Admin not found or not authorized"}, status=403)
+        try:
+            admin = models.User.objects.get(id=admin_id, is_superadmin=True)
+        except models.User.DoesNotExist:
+            return JsonResponse({"message": "Admin not found or not authorized"}, status=403)
 
-    try:
-        user = models.User.objects.get(id=user_id)
-    except models.User.DoesNotExist:
-        return JsonResponse({"message": "User not found"}, status=404)
+        try:
+            user_role = models.UserRole.objects.get(id=user_role_id)
+        except models.UserRole.DoesNotExist:
+            return JsonResponse({"message": "User not found"}, status=404)
 
-    # Here you can include the logic to fetch and return the user dashboard data
-    user_dashboard_data = {
-        "user_id": user.id,
-        "user_email": user.email,
-        # Add other user-specific data here
-    }
-    return JsonResponse(user_dashboard_data, status=200)
+        user_dashboard_data = {
+            "user_role": user_role.id,
+            "user_email": user_role.user.email,
+        }
+        return JsonResponse(user_dashboard_data, status=200)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
