@@ -10,6 +10,8 @@ urlpatterns = [
     path('InvoiceMgt/<int:user_id>/',views.InvoiceAPI),
     # used to store invoice that admin will post
     path('PostInvoice/',views.PostInvoiceAPI),
-    path('SalesPurchasedReport/<int:User_id>',views.SalesPurchasedReportAPI),
+    path('SalesPurchasedReport/<int:User_id>/',views.SalesPurchasedReportAPI),
     path('UserManagement/',views.UserManagementAPI),
+    path('GenerateToken/<int:admin_id>/<int:user_id>/',views.GenerateTokenAPI),
+    path('userPersonate/',views.UserPersonateAPI),
 ]

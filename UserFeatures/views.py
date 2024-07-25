@@ -86,7 +86,11 @@ def LoginAPI(request):
             return JsonResponse({"message": "Invalid JSON"}, status=400)
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-    
+
+# @csrf_exempt
+# def ChangeStatusAPI(request):
+#     if request.method == 'GET':
+           
 @csrf_exempt
 def BankAccDetailsAPI(request):
     if request.method == 'POST':

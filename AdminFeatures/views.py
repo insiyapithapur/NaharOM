@@ -8,6 +8,10 @@ from django.views.decorators.csrf import csrf_exempt
 from UserFeatures import models
 from django.utils import timezone
 from django.db import transaction
+import base64
+import time
+from django.conf import settings
+import hashlib
 
 @csrf_exempt
 def LoginAPI(request):
@@ -73,6 +77,8 @@ def filter_invoice_data(invoice):
     # print("product: ",product)
     return {
         "primary_invoice_id": invoice['id'],
+        # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
+        "buyer_poc_name" : invoice['buyer_poc_name'],
         "product_name": product.get('name'),
         "irr": product.get('interest_rate_fixed'),
         "tenure_in_days": product.get('tenure_in_days'),
@@ -379,3 +385,68 @@ def UserManagementAPI(request):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
+def generate_token(admin_id, user_id):
+    timestamp = int(time.time())
+    token = f"{admin_id}:{user_id}:{timestamp}"
+    signature = hashlib.sha256(f"{token}:{settings.SECRET_KEY}".encode()).hexdigest()
+    token_with_signature = f"{token}:{signature}"
+    encoded_token = base64.urlsafe_b64encode(token_with_signature.encode()).decode()
+    return encoded_token
+
+def decode_token(token):
+    try:
+        decoded_token = base64.urlsafe_b64decode(token.encode()).decode()
+        parts = decoded_token.split(':')
+        if len(parts) != 4:
+            return None
+        
+        admin_id, user_id, timestamp, received_signature = parts
+        token_without_signature = f"{admin_id}:{user_id}:{timestamp}"
+        expected_signature = hashlib.sha256(f"{token_without_signature}:{settings.SECRET_KEY}".encode()).hexdigest()
+        
+        if received_signature != expected_signature:
+            return None
+        
+        return admin_id, user_id, int(timestamp)
+    except Exception as e:
+        return "failed to decode the token"
+    
+@csrf_exempt
+def GenerateTokenAPI(request, admin_id, user_id):
+    if request.method == 'GET':
+        token = generate_token(admin_id, user_id)
+        # admin_id , user_id exist check?
+        return JsonResponse({"token": token}, status=200)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+    
+@csrf_exempt
+def UserPersonateAPI(request):
+    token = request.GET.get('token')
+    if not token:
+        return JsonResponse({"message": "Token is required"}, status=400)
+
+    decoded_data = decode_token(token)
+    if not decoded_data:
+        return JsonResponse({"message": "Invalid token"}, status=400)
+
+    admin_id, user_id, timestamp = decoded_data
+
+    try:
+        admin = models.User.objects.get(id=admin_id, is_superuser=True)
+    except models.User.DoesNotExist:
+        return JsonResponse({"message": "Admin not found or not authorized"}, status=403)
+
+    try:
+        user = models.User.objects.get(id=user_id)
+    except models.User.DoesNotExist:
+        return JsonResponse({"message": "User not found"}, status=404)
+
+    # Here you can include the logic to fetch and return the user dashboard data
+    user_dashboard_data = {
+        "user_id": user.id,
+        "user_email": user.email,
+        # Add other user-specific data here
+    }
+    return JsonResponse(user_dashboard_data, status=200)
