@@ -13,5 +13,5 @@ urlpatterns = [
     path('SalesPurchasedReport/<int:User_id>/',views.SalesPurchasedReportAPI),
     path('UserManagement/',views.UserManagementAPI),
     path('GenerateToken/<int:admin_id>/<int:user_role_id>/',views.GenerateTokenAPI),
-    path('userPersonate/<int:token>/',views.UserPersonateAPI),
+    path('userPersonate/<slug:token>/',views.UserPersonateAPI),
 ]
