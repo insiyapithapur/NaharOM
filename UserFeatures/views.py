@@ -953,7 +953,20 @@ def VerifyOtpAPI(request):
             response = requests.post(url, headers=headers, json=payload)
 
             if response.status_code == 200:
-                return JsonResponse(response.json(), status=200)
+                try:
+                    user = models.User.objects.get(mobile = mobile_number)
+                    return JsonResponse({"message": "User registered already"}, status=400)
+                except models.User.DoesNotExist:
+                    user = models.User.objects.create(
+                        mobile=mobile_number,
+                        email="default@gmail.com"
+                    )
+
+                    return JsonResponse({
+                        "message": "User registered successfully",
+                        "signzy_Response" : response.json(),
+                        "user_id": user.id #not register his role
+                    }, status=201)
             else:
                 return JsonResponse({"message": "Failed to verify OTP"}, status=response.status_code)
         except json.JSONDecodeError:

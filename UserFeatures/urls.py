@@ -6,6 +6,7 @@ urlpatterns = [
     path('Register/',views.RegisterAPI),
     path('generateOTP/',views.GenerateOtpAPI),
     path('verifyOtp/',views.VerifyOtpAPI),
+    # path('GetUserDetails/<int:user_id>/',views.GetUserDetailsAPI), #details fetach karavis ane user_role store karis
     # path('status/',views.ChanageStatusAPI),
     path('BankAccDetails/',views.BankAccDetailsAPI), 
     path('Credit_Funds/',views.Credit_FundsAPI), #bank_to_wallet
