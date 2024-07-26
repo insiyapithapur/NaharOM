@@ -258,19 +258,19 @@ def GetDetails(request,user_role_id):
             buyer_list = []
             for invoice in invoices:
                 invoice_data = {
-                    'Invoice_id': invoice.id,
+                    'Invoice_id': invoice.id,  #f
                     'Invoice_primary_id' : invoice.primary_invoice_id,
                     'Invoice_no_of_partitions': invoice.no_of_partitions,
-                    'Invoice_remaining_partitions': invoice.remaining_partitions,
-                    'Invoice_principle_amt': invoice.principle_amt,
+                    'Invoice_remaining_partitions': invoice.remaining_partitions, #F
+                    'Invoice_principle_amt': invoice.principle_amt, #F
                     'Invoice_name': invoice.product_name,
                     'Invoice_post_date': invoice.post_date,
                     'Invoice_post_time': invoice.post_time,
-                    'Invoice_interest': invoice.interest,
+                    'Invoice_interest': invoice.interest, #F
                     'Invoice_xirr': invoice.xirr, #reveresed IRR
                     'Invoice_irr' : invoice.irr, #reveresed IRR
                     'Invoice_tenure_in_days': invoice.tenure_in_days, #reveresed IRR
-                    'Invoice_expiration_time': invoice.expiration_time,
+                    'Invoice_expiration_time': invoice.expiration_time, #F
                     'Invoice_sold': invoice.sold,
                     'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
                     'isAdmin' : True ,
@@ -287,24 +287,27 @@ def GetDetails(request,user_role_id):
                     invoice_data = {
                         'Invoice_id': invoice.id,
                         'Invoice_primary_id' : invoice.primary_invoice_id,
+                        'Invoice_no_of_partitions': seller.no_of_partitions,
+                        'Invoice_remaining_partitions': invoice.remaining_partitions,
+                        'sell_id' : seller.id,
+                        'Invoice_principle_amt': seller.amount, #amt which is set by seller
                         'Invoice_name': invoice.product_name,
-                        'Invoice_Admin_post_date': invoice.post_date,
-                        'Invoice_Admin_post_time': invoice.post_time,
+                        'Invoice_post_date': seller.sell_date,
+                        'Invoice_post_time': seller.sell_time,
                         'Invoice_interest': invoice.interest,
                         'Invoice_xirr': invoice.xirr,
                         'Invoice_irr' : invoice.irr,
                         'Invoice_tenure_in_days': invoice.tenure_in_days,
                         'Invoice_expiration_time': invoice.expiration_time,
+                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
+                        'Invoice_sold': seller.sold,
+                        'isAdmin' : False ,
+                        'type' : 'CanBuy',
+                        'Invoice_Admin_post_date': invoice.post_date,
+                        'Invoice_Admin_post_time': invoice.post_time,
                         'Seller_user_id' : seller.User.id,
-                        'Selling_amount': seller.amount,
-                        'sell_date': seller.sell_date,
-                        'sell_time': seller.sell_time,
                         'no_of_partition_for_selling' :seller.no_of_partitions,
                         'remaining_partitions_for_selling': seller.remaining_partitions,
-                        'sold': seller.sold,
-                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
-                        'isAdmin' : False ,
-                        'type' : 'CanBuy'
                     }
                 seller_list.append(invoice_data)
 
@@ -314,16 +317,24 @@ def GetDetails(request,user_role_id):
             for Brought_invoice in Brought_invoices:
                     user_id = Brought_invoice.user.id
                     Buyer_data = {
+                        'Invoice_id': Brought_invoice.invoice.id,
+                        'Invoice_primary_id' : Brought_invoice.invoice.primary_invoice_id,
+                        'Invoice_no_of_partitions': 0,
+                        'Invoice_remaining_partitions': Brought_invoice.no_of_partitions, # it is just total purchased unit of user
                         'Buyer_id': Brought_invoice.id,
-                        'user_id' : user_id,
-                        'no_of_puchased_partitions': Brought_invoice.no_of_partitions,
-                        'Total_Purchased_Amt': Brought_invoice.total_amount_invested,
-                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
-                        'Invoice_id' : Brought_invoice.invoice.id,
+                        'Invoice_principle_amt': Brought_invoice.total_amount_invested, #user had buy invoice with this amt
+                        'Invoice_post_date': Brought_invoice.purchase_date,
+                        'Invoice_post_time': Brought_invoice.purchase_time,
                         'Invoice_interest' : Brought_invoice.invoice.interest,
                         'Invoice_xirr' : Brought_invoice.invoice.xirr,
                         'Invoice_irr' : Brought_invoice.invoice.irr,
-                        'Invoice_PrincipleAmt' : Brought_invoice.invoice.principle_amt,
+                        'Invoice_expiration_time': Brought_invoice.invoice.expiration_time,
+                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
+                        'Invoice_sold': False,
+                        'isAdmin' : False ,
+                        'type' : 'brought',
+                        'user_id' : user_id,
+                        'Invoice_Amt_set_by_admin' : Brought_invoice.invoice.principle_amt,
                         'Invoice_No_of_Units' : Brought_invoice.invoice.no_of_partitions,
                         # 'InvoiceDetails' : {
                         #     'Invoice_id' : Brought_invoice.invoice.id,
@@ -333,10 +344,6 @@ def GetDetails(request,user_role_id):
                         #     'Invoice_PrincipleAmt' : Brought_invoice.invoice.principle_amt,
                         #     'Invoice_No_of_Units' : Brought_invoice.invoice.no_of_partitions,
                         # },
-                        'purchase_date': Brought_invoice.purchase_date,
-                        'purchase_time': Brought_invoice.purchase_time,
-                        'isAdmin' : False ,
-                        'type' : 'brought'
                     }
                     Brought_list.append(Buyer_data)
 
@@ -349,23 +356,28 @@ def GetDetails(request,user_role_id):
                     user_id = seller.User.id
                     posted_for_sell_list_data = {
                         'Invoice_id': invoice.id,
+                        'Invoice_primary_id' : invoice.primary_invoice_id,
+                        'Invoice_no_of_partitions': seller.no_of_partitions,
+                        'Invoice_remaining_partitions': seller.remaining_partitions,
+                        'sell_id' : seller.id,
+                        'user_id': user_id,
+                        'Invoice_principle_amt': seller.amount,
+                        'Invoice_post_date': seller.sell_date,
+                        'Invoice_post_time': seller.sell_time,
+                        'Invoice_interest' : invoice.interest,
+                        'Invoice_xirr' : invoice.xirr,
+                        'Invoice_irr' : invoice.irr,
+                        'Invoice_tenure_in_days': invoice.tenure_in_days,
+                        'Invoice_expiration_time': invoice.expiration_time,
+                        'Interest_cut_off_time' : InterestcutoffTime.interest_cut_off_time,
+                        'Invoice_sold': seller.sold,
+                        'isAdmin' : False ,
+                        'type' : 'Posted for sell',
+
                         'Invoice_name': invoice.product_name,
                         'Invoice_Admin_post_date': invoice.post_date,
                         'Invoice_Admin_post_time': invoice.post_time,
-                        'Invoice_interest': invoice.interest,
-                        'Invoice_xirr': invoice.xirr,
-                        'Invoice_tenure_in_days': invoice.tenure_in_days,
-                        'Invoice_expiration_time': invoice.expiration_time,
-                        'seller_id' : seller.id,
-                        'user_id': user_id,
-                        'Selling_amount': seller.amount,
-                        'sell_date': seller.sell_date,
-                        'sell_time': seller.sell_time,
-                        'no_of_partition_for_sell' : seller.no_of_partitions,
-                        'remaining_partitions': seller.remaining_partitions,
-                        'sold': seller.sold,
-                        'isAdmin' : False ,
-                        'type' : 'Posted for sell'
+    
                     }
                 posted_for_sell_list.append(posted_for_sell_list_data)
                 combined_list = buyer_list + seller_list + Brought_list + posted_for_sell_list
