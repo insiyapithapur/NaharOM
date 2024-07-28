@@ -536,8 +536,8 @@ def TobuyAPI(request):
             data = json.loads(request.body)
             user_role_id = data.get('user_role_id')  
             invoice_secondary_id = data.get('invoice_secondary_id')
-            wallet_id = data.get('wallet_id')
-            seller_id = data.get('seller_id') #if 2nd buyer
+            wallet_id = data.get('wallet_id')  # this will not come
+            seller_id = data.get('sell_id') #if 2nd buyer
             no_of_partition = data.get('no_of_partition')
             purchase_date = timezone.now().date()
             purchase_time = timezone.now().time()
@@ -726,6 +726,7 @@ def TobuyAPI(request):
     
 # after making first post to sell add remaining_partition if it is not first post to sell
 # for that invoice then check remaining_partition
+# already_posted for sell can't be resell
 @csrf_exempt
 def ToSellAPI(request):
     if request.method == 'POST':
@@ -734,7 +735,7 @@ def ToSellAPI(request):
             user_role_id = data.get('user_role_id')
             invoice_id = data.get('invoice_id')
             no_of_fractions = data.get('no_fractions')
-            amount = data.get('amount')
+            amount = data.get('amount')  #per unit amt 
 
             if not all([user_role_id, invoice_id, no_of_fractions, amount]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
@@ -744,6 +745,11 @@ def ToSellAPI(request):
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
             # print("user_role ",user_role)
+
+            try:
+                invoice = models.Invoices.objects.get(id=invoice_id)
+            except models.Invoices.DoesNotExist:
+                return JsonResponse({"message": "Invoice role not found"}, status=404)
 
             with transaction.atomic():
                 Had_no_of_fraction = models.FractionalUnits.objects.filter(invoice = invoice_id , current_owner = user_role_id).count()
@@ -770,6 +776,7 @@ def ToSellAPI(request):
             
                 seller = models.Sellers.objects.create(
                     User=user_role,
+                    Invoice = invoice,
                     amount=amount,
                     wallet=wallet,
                     no_of_partitions=no_of_fractions,

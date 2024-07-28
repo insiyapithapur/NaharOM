@@ -12,9 +12,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
-import dj_database_url
+# import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -87,7 +88,7 @@ WSGI_APPLICATION = 'SecondaryTradingPlatform.wsgi.application'
 
 # Replace the DATABASES section of your settings.py with this
 DATABASES = {
-  'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+  'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
 #   {
     # 'ENGINE': 'django.db.backends.postgresql',
     # 'NAME': os.getenv('PGDATABASE'),

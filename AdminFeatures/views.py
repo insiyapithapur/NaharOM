@@ -174,6 +174,7 @@ def PostInvoiceAPI(request):
             
             primary_invoice_id = data.get('primary_invoice_id')
             no_of_fractional_units = data.get('no_of_fractional_Unit')
+            # amt , from_date , to_date
 
             invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
 
