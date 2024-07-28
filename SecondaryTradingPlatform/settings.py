@@ -86,8 +86,8 @@ WSGI_APPLICATION = 'SecondaryTradingPlatform.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 
-print("nas mcbxdsa",os.getenv('DATABASE_URL'))
-print("dj database ",dj_database_url.parse(os.getenv('DATABASE_URL')))
+# print("nas mcbxdsa",os.getenv('DATABASE_URL'))
+# print("dj database ",dj_database_url.parse(os.getenv('DATABASE_URL')))
 DATABASES = {
   'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
 #   {
