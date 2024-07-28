@@ -6,38 +6,36 @@ from django.contrib.auth.models import AbstractBaseUser , BaseUserManager , Perm
 from django.utils.translation import gettext_lazy as _
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, mobile, role, password=None, **extra_fields):
+    def create_user(self, email, mobile, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
         if not mobile:
             raise ValueError('The Mobile field must be set')
-        if not role:
-            raise ValueError('The Role field must be set')
 
         email = self.normalize_email(email)
-        user = self.model(email=email, mobile=mobile, role=role, **extra_fields)
+        user = self.model(email=email, mobile=mobile, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, mobile, role, password=None, **extra_fields):
+    def create_superuser(self, email, mobile, password=None, **extra_fields):
         extra_fields.setdefault('is_admin', True)
         extra_fields.setdefault('is_superadmin', True)
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_active', True)
 
-        return self.create_user(email, mobile, role, password, **extra_fields)
+        user = self.create_user(email, mobile, password, **extra_fields)
+        UserRole.objects.create(user=user, role='superAdmin')
+        return user
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField()
-    mobile = models.CharField(max_length=15,unique=True)
-    # role = models.CharField(max_length=50, choices=[('company', 'Company'), ('individual', 'Individual')], blank=True, null=True)
-
+    mobile = models.CharField(max_length=15, unique=True)
     is_admin = models.BooleanField(default=False)
     is_superadmin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now())
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = CustomUserManager()
@@ -50,7 +48,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class UserRole(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=50, choices=[('company', 'Company'), ('individual', 'Individual') , ('admin', 'Admin') , ('superAdmin', 'SuperAdmin')])
+    role = models.CharField(max_length=50, choices=[
+        ('company', 'Company'),
+        ('individual', 'Individual'),
+        ('admin', 'Admin'),
+        ('superAdmin', 'SuperAdmin')
+    ])
+
+    def __str__(self):
+        return f"{self.user.mobile} - {self.role}"
 
 class CompanyDetails(models.Model):
     user_role = models.OneToOneField(UserRole, on_delete=models.CASCADE)

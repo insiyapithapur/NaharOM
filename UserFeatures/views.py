@@ -18,10 +18,11 @@ def RegisterAPI(request):
             role = data.get('role')
 
             if not mobile or not role:
-                return JsonResponse({"message": "Mobile, password, and role are required"}, status=400)
+                return JsonResponse({"message": "Mobile and role are required"}, status=400)
 
             try:
                 user = models.User.objects.get(mobile = mobile)
+                return JsonResponse({"message": "Mobile number already exist"}, status=400)
             except models.User.DoesNotExist:
                 #  api integrate , mobile --> email
                 user = models.User.objects.create(
