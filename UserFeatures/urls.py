@@ -8,6 +8,10 @@ urlpatterns = [
     path('verifyOtp/',views.VerifyOtpAPI),
     # path('GetUserDetails/<int:user_id>/',views.GetUserDetailsAPI), #details fetach karavis ane user_role store karis
     # path('status/',views.ChanageStatusAPI),
+    # pancard enter api
+    # phone to prefill 
+    # company pancard --> dettails fetch
+    # manually entered
     path('BankAccDetails/',views.BankAccDetailsAPI), 
     path('Credit_Funds/',views.Credit_FundsAPI), #bank_to_wallet
     path('ledger/<int:user_role_id>',views.LedgerAPI),

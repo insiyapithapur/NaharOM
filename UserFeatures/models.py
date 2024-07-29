@@ -132,15 +132,16 @@ class Invoices(models.Model):
 class FractionalUnits(models.Model):
     fractional_unit_id = models.CharField(max_length=20, unique=True, editable=False)
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE)
-    current_owner = models.ForeignKey(UserRole, on_delete=models.CASCADE , null=True, blank=True)
+    current_owner = models.ForeignKey(UserRole, on_delete=models.CASCADE, null=True, blank=True)
     sold = models.BooleanField(default=False)
-    created_At = models.DateTimeField(default=timezone.now())
+    created_At = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
         if not self.fractional_unit_id:
             last_unit = FractionalUnits.objects.filter(invoice=self.invoice).order_by('id').last()
             if last_unit:
-                last_unit_id = int(last_unit.fractional_unit_id.split('.')[-1])
+                last_unit_id_str = last_unit.fractional_unit_id.split('-')[-1]
+                last_unit_id = int(last_unit_id_str)
                 new_unit_id = last_unit_id + 1
             else:
                 new_unit_id = 1
