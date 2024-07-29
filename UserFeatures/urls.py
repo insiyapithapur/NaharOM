@@ -21,4 +21,5 @@ urlpatterns = [
     path('GetDetails/<int:user_role_id>',views.GetDetails),
     path('AdminSettings/', views.create_entry, name='create_entry'),
     path('showFunds/<int:user_role_id>',views.ShowFundsAPI),
+    path('cashFlow/<int:invoiceID>/',views.cashFlowAPI)
 ]

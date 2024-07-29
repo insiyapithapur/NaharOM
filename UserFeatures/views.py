@@ -761,3 +761,38 @@ def VerifyOtpAPI(request):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+    
+@csrf_exempt
+def cashFlowAPI(request,invoiceID):
+    if request.method == 'GET':
+        try :
+            try:
+                invoice =  models.Invoices.objects.get(id = invoiceID)
+            except models.Invoices.DoesNotExist:
+                return JsonResponse({"message":"invoiceID not found"})
+            
+            primary_invoice_id = invoice.primary_invoice_id
+            print(primary_invoice_id)
+            url = 'http://backend.ethyx.in/admin-api/payment-schedule-calculator/'
+            headers = {
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzIyMzQyNzUwLCJpYXQiOjE3MjIyNTYzNTAsImp0aSI6ImZlMjAwMzM1OTYzNjRmNTRhYjA3ZTE4NWU4ZDI5NWJkIiwidWlkIjoiQVNOV1ROODI4NSJ9.8_yy4cwJGrJ8z2UsRcAYl7Hr3-1xGfIGoY4TFQ3JZng',
+                'Content-Type': 'application/json'
+            }
+
+            payload = {
+                "invoice_product_id": 8
+            }
+
+            response = requests.post(url, headers=headers, json=payload)
+
+            if response.status_code == 200:
+                return JsonResponse({
+                        "CashFlow" : response.json()
+                }, status=200)
+            else:
+                return JsonResponse({"message": response.json()}, status=response.status_code)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
