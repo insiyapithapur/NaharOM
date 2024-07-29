@@ -5,10 +5,12 @@ urlpatterns = [
     path('Login/',views.LoginAPI),
     path('ExtractInvoicesAPI/',views.ExtractInvoicesAPI),
     # used to send all invoices from primary to secondary platform
-    path('GetInvoices/<int:user_id>/', views.GetInvoicesAPI), # primary to secondary all invoices show
-    path('GetInvoices/<int:user_id>/<int:primary_invoice_id>/', views.GetInvoicesAPI), #particular 1 invoice fetch 
+    path('GetInvoices/<int:user_id>/', views.GetInvoicesAPI),
+    #particular 1 invoice fetch from primary
+    path('GetInvoices/<int:user_id>/<int:primary_invoice_id>/', views.GetInvoicesAPI),
+    # used to send all invoice ( admin posted + admin not posted means primary one )
     path('InvoiceMgt/<int:user_id>/',views.InvoiceAPI),
-    # used to store invoice that admin will post
+    # used to post invoice that admin want to
     path('PostInvoice/',views.PostInvoiceAPI),
     path('SalesPurchasedReport/<int:User_id>/',views.SalesPurchasedReportAPI),
     path('UserManagement/',views.UserManagementAPI),

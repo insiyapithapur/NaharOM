@@ -27,7 +27,7 @@ def LoginAPI(request):
             try:
                 user = models.User.objects.get(mobile=mobile)
                 if user.check_password(password):
-                    if user.is_admin:
+                    if user.is_superadmin:
                         return JsonResponse({"message": "Admin logged in successfully", "id": user.id}, status=200)
                     else:
                         return JsonResponse({"message": "User is not an admin"}, status=403)
@@ -130,7 +130,7 @@ def InvoiceAPI(request,user_id, primary_invoice_id=None):
             except models.User.DoesNotExist:
                 return JsonResponse({"message": "User not found"}, status=404)
 
-            if not user.is_admin:
+            if not user.is_superadmin:
                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
 
             if primary_invoice_id:
@@ -172,9 +172,13 @@ def PostInvoiceAPI(request):
             if not user.is_admin:
                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
             
+            user_role = models.UserRole.objects.get(user = user)
+            
             primary_invoice_id = data.get('primary_invoice_id')
-            no_of_fractional_units = data.get('no_of_fractional_Unit')
-            # amt , from_date , to_date
+            no_of_units = data.get('no_of_fractional_Unit')
+            per_unit_price = data.get('per_unit_price')
+            from_date = data.get('from_date')
+            to_date = data.get('to_date')
 
             invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
 
@@ -182,46 +186,71 @@ def PostInvoiceAPI(request):
                 return JsonResponse({"message": "Invoice data not found or product is null"}, status=404)
 
             product_data = invoice_data['product']
-            post_date = timezone.now().date()
-            post_time = timezone.now().time()
-            name = product_data['name']
-            interest_rate = product_data['interest_rate']
+            product_name = product_data['name']
+            interest = product_data['interest']
             xirr = product_data['xirr_in_percentage']
             irr = product_data['interest_rate_fixed']
             tenure_in_days = product_data['tenure_in_days']
-            principle_amt = product_data['principle_amt']
+            # principle_amt = product_data['principle_amt']
             expiration_time = timezone.now() + timezone.timedelta(days=tenure_in_days)
 
-            if not all([primary_invoice_id, no_of_fractional_units]):
-                return JsonResponse({"message": "All fields are required"}, status=400)
+            if not all([primary_invoice_id, no_of_units,per_unit_price,from_date,to_date]):
+                return JsonResponse({"message": "All fields (primary_invoice_id, no_of_units,per_unit_price, from_date , to_date)are required"}, status=400)
             
             with transaction.atomic():
                 print("before create")
                 # already posted case check
+                
                 invoice = models.Invoices.objects.create(
                     primary_invoice_id=primary_invoice_id,
-                    no_of_partitions=no_of_fractional_units,
-                    name=name,
-                    post_date=post_date,
-                    post_time=post_time,
-                    post_date_time = timezone.now(),
-                    interest= interest_rate,
-                    xirr=xirr,
-                    irr = irr ,
-                    tenure_in_days=tenure_in_days,
-                    principle_amt=principle_amt,
-                    expiration_time=expiration_time,
-                    remaining_partitions = no_of_fractional_units ,
-                    sold = False
+                    product_name = product_name,
+                    per_unit_price = per_unit_price,
+                    no_of_units = no_of_units ,
+                    interest = interest ,
+                    xirr = xirr ,
+                    irr = irr,
+                    tenure_in_days = tenure_in_days ,
+                    expiration_time = expiration_time ,
+                    sold = False ,
+                    expired = False ,
+                    created_At = timezone.now()
                 )
-                print("after create")
 
-                fractional_units = [
-                    models.FractionalUnits(invoice=invoice)
-                    for _ in range(no_of_fractional_units)
-                ]
-                models.FractionalUnits.objects.bulk_create(fractional_units)
+                print("after invoices")
 
+                fractional_units = []
+                for _ in range(no_of_units):
+                    fractional_unit = models.FractionalUnits(
+                        invoice=invoice,
+                        current_owner=None, 
+                        sold=False,
+                        created_At=timezone.now()
+                    )
+                    fractional_unit.save()
+                    fractional_units.append(fractional_unit)
+
+                print("after fractionals")
+                
+                post_for_sale = models.Post_for_sale.objects.create(
+                    no_of_units=no_of_units,
+                    per_unit_price=per_unit_price,
+                    user_id=user_role,
+                    invoice_id=invoice,
+                    remaining_units=no_of_units,
+                    withdrawn=False,
+                    post_time=timezone.now().time(),
+                    post_date=timezone.now().date(),
+                    from_date=from_date,
+                    to_date=to_date,
+                    post_dateTime=timezone.now()
+                )
+
+                for fractional_unit in fractional_units:
+                    models.Post_For_Sale_UnitTracker.objects.create(
+                        unitID=fractional_unit,
+                        post_for_saleID=post_for_sale
+                    )
+                
             return JsonResponse({"message": "Invoice created successfully", "Secondary_invoice_id": invoice.id}, status=201)
 
         except json.JSONDecodeError:

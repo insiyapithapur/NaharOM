@@ -22,8 +22,9 @@ def RegisterAPI(request):
 
             try:
                 user = models.User.objects.get(mobile = mobile)
-                return JsonResponse({"message": "Mobile number already exist"}, status=400)
-            except models.User.DoesNotExist:
+                user_role = models.UserRole.objects.get(user = user , role = role)
+                return JsonResponse({"message": "User already exist"}, status=400)
+            except models.UserRole.DoesNotExist:
                 #  api integrate , mobile --> email
                 user = models.User.objects.create(
                     mobile=mobile,
@@ -530,193 +531,133 @@ def GetDetails(request,user_role_id):
 
 #     else:
 #         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+#  funds error handling
 @csrf_exempt
 def TobuyAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_role_id = data.get('user_role_id')  
-            invoice_secondary_id = data.get('invoice_secondary_id')
-            wallet_id = data.get('wallet_id')  # this will not come
-            seller_id = data.get('sell_id') #if 2nd buyer
-            no_of_partition = data.get('no_of_partition')
-            purchase_date = timezone.now().date()
-            purchase_time = timezone.now().time()
+            userRoleID = data.get('userRoleID')  
+            invoiceID = data.get('invoiceID')  #secondary invoice id
+            postForSaleID = data.get('postForSaleID')
+            no_of_units = data.get('no_of_units')
 
             try:
-                user_role = models.UserRole.objects.get(id=user_role_id)
+                user_role = models.UserRole.objects.get(id=userRoleID)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                return JsonResponse({"message": "User not found"}, status=404)
 
             try:
-                invoice = models.Invoices.objects.get(id=invoice_secondary_id)
+                invoice = models.Invoices.objects.get(id=invoiceID)
             except models.Invoices.DoesNotExist:
                 return JsonResponse({"message": "Invoice not found"}, status=404)
 
             try:
-                buyer_wallet = models.OutstandingBalance.objects.get(id=wallet_id)
+                bankAcc = models.BankAccountDetails.objects.get(user_role=userRoleID)
+                buyer_wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
             except models.OutstandingBalance.DoesNotExist:
                 return JsonResponse({"message": "Buyer Wallet not found"}, status=404)
+            
+            try:
+                postForSale = models.Post_for_sell.objects.get(id=postForSaleID)
+            except models.Post_for_sell.DoesNotExist:
+                return JsonResponse({"message": "postForSaleID not found"}, status=404)
+            
+            if postForSale.invoice_id.invoice_id != invoice.invoice_id :
+                return JsonResponse({"message" : "invoiceid is not mtached"} , status=400)
+            
+            if postForSale.remaining_units < no_of_units:
+                return JsonResponse({"message": "Not enough units available for sale"}, status=400)
+            
+            total_price = postForSale.per_unit_price * no_of_units
 
+            if buyer_wallet.balance < total_price:
+                return JsonResponse({"message": "Insufficient balance in buyer's wallet"}, status=400)
+            
             with transaction.atomic():
-                if seller_id:
-                    try:
-                        seller = models.Sellers.objects.get(id=seller_id)
-                    except models.Sellers.DoesNotExist:
-                        return JsonResponse({"message": "Seller not found"}, status=404)
-                    
-                    print("seller.no_of_partitions ",seller.no_of_partitions)
-                    print("seller.amount ",seller.amount)
-                    Fractional_unit_Value = (seller.amount) / (seller.no_of_partitions)
-                    total_amount_invested =  Fractional_unit_Value * no_of_partition
+                print("before buyer")
+                buyer = models.Buy.objects.create(
+                    user_id=user_role,
+                    no_of_units=no_of_units,
+                    per_unit_price_invested=postForSale.per_unit_price,
+                    wallet=buyer_wallet,
+                    purchase_date=timezone.now().date(),
+                    purchase_time=timezone.now().time(),
+                    purchase_date_time=timezone.now()
+                )
+                print("before sales")
+                sales = models.Sell.objects.create(
+                    UserID=postForSale.user_id,
+                    Invoice=postForSale.invoice_id,
+                    no_of_units=no_of_units,
+                    sell_date=timezone.now().date(),
+                    sell_time=timezone.now().time(),
+                    sell_date_time=timezone.now()
+                )
+                print("before units_for_sale")
+                units_for_sale = models.Post_For_Sell_UnitTracker.objects.filter(
+                    post_for_saleID=postForSale,
+                    sellersID__isnull=True
+                ).order_by('id')[:no_of_units]
 
-                    
-                    if seller.remaining_partitions < no_of_partition :
-                        return JsonResponse({"message": "Not enough fractional units available"}, status=400)
-                    
-                    fractional_units = models.FractionalUnits.objects.filter(
-                        current_owner=seller.User, sold=True)[:no_of_partition]
-                    fractional_units_count = fractional_units.count()
-                    # print("fractional_units_count ",fractional_units_count)
-
-                    if fractional_units_count < no_of_partition :
-                        return JsonResponse({"message": "Not enough fractional units available"}, status=400)
-                    
-                    buyer = models.Buyers.objects.create(
-                        user=user_role,
-                        invoice=invoice,
-                        no_of_partitions=no_of_partition,
-                        total_amount_invested=total_amount_invested,
-                        wallet=buyer_wallet,
-                        purchase_date=purchase_date,
-                        purchase_time=purchase_time,
-                    )
-                    
-                    for unit in fractional_units:
-                        unit.current_owner = user_role
-                        unit.save()
-                        models.SalePurchaseReport.objects.create(
-                            unit=unit,
-                            seller=seller,
-                            buyer=buyer,
-                            transaction_date=timezone.now()
-                        )
-
-                    seller.remaining_partitions -= no_of_partition
-                    if seller.remaining_partitions == 0:
-                        seller.sold = True
-                    seller.save()
-                    # print("seller.remaining_partitions after buying ",seller.remaining_partitions)
-
-                    seller_wallet = seller.wallet
-                    # print("seller_wallet.balance " ,seller_wallet.balance)
-                    seller_wallet.balance += total_amount_invested
-                    seller_wallet.save()
-
-                    models.OutstandingBalanceTransaction.objects.create(
-                        wallet=seller_wallet,
-                        transaction_id=uuid.uuid4(),
-                        type='sell',
-                        creditedAmount=total_amount_invested,
-                        debitedAmount=0,
-                        status='response',
-                        source='wallet_to_sell',
-                        purpose='Funds received from selling',
-                        bank_acc=None,
-                        invoice=invoice,
-                        time_date=timezone.now()
+                if units_for_sale.count() < no_of_units:
+                    return JsonResponse({"message": "Not enough units available for sale"}, status=400)
+                
+                print("unit")
+                for unit in units_for_sale:
+                    unit.sellersID = sales
+                    unit.save()
+                    print("Buyer_UnitsTracker")
+                    models.Buy_UnitsTracker.objects.create(
+                        buyer_id=buyer,
+                        unitID=unit.unitID,
+                        post_for_saleID=postForSale
                     )
 
-                    if buyer_wallet.balance < total_amount_invested:
-                        return JsonResponse({"message": "Insufficient funds in the wallet"}, status=400)
-                    else:
-                        buyer_wallet.balance -= total_amount_invested
-                        buyer_wallet.save()
+                    unit.unitID.sold = True
+                    unit.unitID.current_owner = user_role
+                    unit.unitID.save()
+                
+                buyer_wallet.balance -= total_price
+                buyer_wallet.save()
 
-                    models.OutstandingBalanceTransaction.objects.create(
-                        wallet=buyer_wallet,
-                        transaction_id=uuid.uuid4(),
-                        type='buy',
-                        creditedAmount=0,
-                        debitedAmount=total_amount_invested,
-                        status='response',
-                        source='wallet_to_buy',
-                        purpose='Funds used for purchasing',
-                        bank_acc=None,
-                        invoice=invoice,
-                        time_date=timezone.now()
-                    )
+                print("seller_wallet")
+                seller_bankAcc = models.BankAccountDetails.objects.get(user_role=postForSale.user_id)
+                seller_wallet = models.OutstandingBalance.objects.get(bank_acc=seller_bankAcc)
+                print(seller_wallet)
+                seller_wallet.balance += total_price
+                seller_wallet.save()
 
-                    return JsonResponse({"message": "Transaction completed successfully", "buyer_id": buyer.id}, status=201)
-                # 1st buyer
-                else:
-                    print("invoice.principle_amt" , invoice.principle_amt)
-                    print("invoice.principle_amt " ,invoice.no_of_partitions)
+                print("transaction buyer")
+                models.OutstandingBalanceTransaction.objects.create(
+                    wallet = buyer_wallet ,
+                    type = "buy" ,
+                    debitedAmount = total_price ,
+                    status = 'response' ,
+                    source = 'wallet_to_buy',
+                    bank_acc = seller_wallet.bank_acc,
+                    invoice = invoice ,
+                    time_date = timezone.now()
+                )
 
-                    Fractional_unit_Value = (invoice.principle_amt) / (invoice.no_of_partitions)
-                    total_amount_invested = Fractional_unit_Value * no_of_partition
-                    print(total_amount_invested)
+                # seller
+                print("transaction seller")
+                models.OutstandingBalanceTransaction.objects.create(
+                    wallet = seller_wallet ,
+                    type = "sell" ,
+                    creditedAmount = total_price ,
+                    status = 'response' ,
+                    source = 'sell_to_wallet',
+                    bank_acc = buyer_wallet.bank_acc ,
+                    invoice = invoice,
+                    time_date = timezone.now()
+                )
 
-                    fractional_units = models.FractionalUnits.objects.filter(
-                        current_owner=None, sold=False , invoice = invoice)[:no_of_partition]
-                    fractional_units_count = fractional_units.count()
+                postForSale.remaining_units -= no_of_units
+                postForSale.save()
 
-                    print("fractional_units_count ",fractional_units_count)
-
-                    if fractional_units_count < no_of_partition :
-                        return JsonResponse({"message": "Not enough fractional units available"}, status=400)
-                    
-                    buyer = models.Buyers.objects.create(
-                        user=user_role,
-                        invoice=invoice,
-                        no_of_partitions=no_of_partition,
-                        total_amount_invested=total_amount_invested,
-                        wallet=buyer_wallet,
-                        purchase_date=purchase_date,
-                        purchase_time=purchase_time,
-                    )
-
-                    for unit in fractional_units:
-                        unit.current_owner = user_role
-                        unit.sold = True
-                        unit.save()
-                    
-                    if buyer_wallet.balance < total_amount_invested:
-                        return JsonResponse({"message": "Insufficient funds in the wallet"}, status=400)
-                    else:
-                        buyer_wallet.balance -= total_amount_invested
-                        buyer_wallet.save()
-
-                    models.OutstandingBalanceTransaction.objects.create(
-                        wallet=buyer_wallet,
-                        transaction_id=uuid.uuid4(),
-                        type='buy',
-                        creditedAmount=0,
-                        debitedAmount=total_amount_invested,
-                        status='response',
-                        source='wallet_to_buy',
-                        purpose='Funds used for purchasing',
-                        bank_acc=None,
-                        invoice=invoice,
-                        time_date=timezone.now()
-                    )
-
-                    Remaining_fraction  = models.FractionalUnits.objects.filter(
-                        sold=False , invoice = invoice)
-                    print("Remaining_fraction ",Remaining_fraction)
-                    
-                    Remaining_fraction_count = Remaining_fraction.count()
-                    print("Remaining_fraction_count ",Remaining_fraction_count)
-
-                    if Remaining_fraction_count:
-                        invoice.remaining_partitions = Remaining_fraction_count
-                        invoice.save()
-                    else:
-                        invoice.remaining_partitions = 0
-                        invoice.sold = True
-                        invoice.save()
-
-                    return JsonResponse({"message": "Transaction completed successfully", "buyer_id": buyer.id}, status=201)
+            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id}, status=201)        
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -733,61 +674,64 @@ def ToSellAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_role_id = data.get('user_role_id')
-            invoice_id = data.get('invoice_id')
-            no_of_fractions = data.get('no_fractions')
-            amount = data.get('amount')  #per unit amt 
+            userRoleID = data.get('userRoleID')
+            buyerID = data.get('buyerID')
+            invoiceID = data.get('invoiceID')
+            no_of_units = data.get('no_of_units')
+            per_unit_price = data.get('per_unit_price')
+            from_date = data.get('from_date')
+            to_date = data.get('to_date')
 
-            if not all([user_role_id, invoice_id, no_of_fractions, amount]):
+            if not all([userRoleID, invoiceID, no_of_units, per_unit_price]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
-            
+
             try:
-                user_role = models.UserRole.objects.get(id=user_role_id)
+                user_role = models.UserRole.objects.get(id=userRoleID)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
-            # print("user_role ",user_role)
 
             try:
-                invoice = models.Invoices.objects.get(id=invoice_id)
+                invoice = models.Invoices.objects.get(id=invoiceID)
             except models.Invoices.DoesNotExist:
-                return JsonResponse({"message": "Invoice role not found"}, status=404)
+                return JsonResponse({"message": "Invoice not found"}, status=404)
+
+            try:
+                buyer = models.Buyers.objects.get(id=buyerID)
+            except models.Buyers.DoesNotExist:
+                return JsonResponse({"message": "Buyer not found"}, status=404)
 
             with transaction.atomic():
-                Had_no_of_fraction = models.FractionalUnits.objects.filter(invoice = invoice_id , current_owner = user_role_id).count()
-                # print("Had_no_of_fraction " , Had_no_of_fraction)
-
-                if not Had_no_of_fraction:
-                    return JsonResponse({"message": "No fractions for sell"}, status=404)
-                
-                if Had_no_of_fraction < no_of_fractions:
-                    return JsonResponse({"message": "Not enough partitions to sell"}, status=400)
-
-                try:
-                    bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
-                except models.BankAccountDetails.DoesNotExist:
-                    return JsonResponse({"message": "BankAcc not found"}, status=404)
-               
-                try:
-                    wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
-                except models.OutstandingBalance.DoesNotExist:
-                    return JsonResponse({"message": "Wallet not found"}, status=404)
-            
-                sell_date = timezone.now().date()
-                sell_time = timezone.now().time()
-            
-                seller = models.Sellers.objects.create(
-                    User=user_role,
-                    Invoice = invoice,
-                    amount=amount,
-                    wallet=wallet,
-                    no_of_partitions=no_of_fractions,
-                    sell_date=sell_date,
-                    sell_time=sell_time,
-                    remaining_partitions=no_of_fractions,
-                    sold=False
+                post_for_sale = models.Post_for_sale.objects.create(
+                    no_of_units=no_of_units,
+                    per_unit_price=per_unit_price,
+                    user_id=user_role,
+                    invoice_id=invoice,
+                    remaining_units=no_of_units,
+                    withdrawn=False,
+                    post_time=timezone.now().time(),
+                    post_date=timezone.now().date(),
+                    from_date=from_date,
+                    to_date=to_date,
+                    post_dateTime=timezone.now()
                 )
-                # print(seller)
-                return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": seller.id}, status=201)
+
+                units_for_selling = models.Buyer_UnitsTracker.objects.filter(
+                    buyer_id=buyer
+                    # post_for_saleID = None
+                ).order_by('id')[:no_of_units]
+                print(units_for_selling.count())
+
+                if units_for_selling.count() < no_of_units:
+                    return JsonResponse({"message": "Not enough units available for selling"}, status=400)
+
+                for unit in units_for_selling:
+                    models.Post_For_Sale_UnitTracker.objects.create(
+                        unitID=unit.unitID,
+                        post_for_saleID=post_for_sale
+                    )
+                    unit.post_for_saleID = post_for_sale
+                    unit.save()
+                return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": user_role.id}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)

@@ -100,8 +100,11 @@ class OutstandingBalance(models.Model):
     updated_at = models.DateTimeField() 
 
 class Invoices(models.Model):
+    # user_id if anyone wants to which admin has posted
     invoice_id = models.CharField(max_length=10,unique=True,editable=False)
     primary_invoice_id = models.IntegerField()
+    product_name = models.CharField()
+    per_unit_price = models.FloatField()
     no_of_units = models.IntegerField()
     interest = models.FloatField()
     xirr = models.FloatField()
@@ -141,7 +144,7 @@ class FractionalUnits(models.Model):
                 new_unit_id = last_unit_id + 1
             else:
                 new_unit_id = 1
-            self.fractional_unit_id = f"{self.invoice.invoice_id}.{new_unit_id}"
+            self.fractional_unit_id = f"{self.invoice.invoice_id}-{new_unit_id}"
         super(FractionalUnits, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -168,6 +171,8 @@ class Post_for_sale(models.Model):
   withdrawn = models.BooleanField(default=False)
   post_time = models.TimeField(default=timezone.now())
   post_date = models.DateField(default=timezone.now())
+  from_date = models.DateField()
+  to_date = models.DateField()
   post_dateTime = models.DateTimeField(default=timezone.now())
 
 class Buyers(models.Model):
@@ -190,12 +195,6 @@ class Sales(models.Model):
     UserID = models.ForeignKey(UserRole, on_delete=models.CASCADE)
     Invoice = models.ForeignKey(Invoices , on_delete=models.CASCADE)
     no_of_units = models.IntegerField()
-    per_unit_price = models.FloatField()
-    wallet = models.ForeignKey('OutstandingBalance', on_delete=models.CASCADE)
-    remaining_units = models.IntegerField()
-    from_date = models.DateField()
-    to_date = models.DateField()
-    sold = models.BooleanField(default=False)
     sell_date = models.DateField(default=timezone.now())
     sell_time = models.TimeField(default=timezone.now())
     sell_date_time = models.DateTimeField(default=timezone.now())
