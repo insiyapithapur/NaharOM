@@ -48,7 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class UserRole(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=50, choices=[
+    role = models.CharField(max_length=50 ,choices=[
         ('company', 'Company'),
         ('individual', 'Individual'),
         ('admin', 'Admin'),
@@ -100,18 +100,16 @@ class OutstandingBalance(models.Model):
     updated_at = models.DateTimeField() 
 
 class Invoices(models.Model):
-    # user_id if anyone wants to which admin has posted
     invoice_id = models.CharField(max_length=10,unique=True,editable=False)
-    primary_invoice_id = models.IntegerField()
+    primary_invoice_id = models.IntegerField(unique=True)
     product_name = models.CharField()
-    per_unit_price = models.FloatField()
-    no_of_units = models.IntegerField()
+    principal_price = models.FloatField()
     interest = models.FloatField()
     xirr = models.FloatField()
     irr = models.FloatField()
     tenure_in_days = models.IntegerField()
     expiration_time = models.DateTimeField()
-    sold = models.BooleanField(default=False)
+    is_fractionalized = models.BooleanField()
     expired = models.BooleanField(default=False)
     created_At = models.DateTimeField(default=timezone.now())
 
@@ -163,6 +161,12 @@ class AdminSettings(models.Model):
 #     buyer = models.ForeignKey('Buyers', on_delete=models.CASCADE)
 #     transaction_date = models.DateTimeField(auto_now_add=True)
 
+class Configurations(models.Model):
+    principal_price = models.FloatField()
+    invoice_id = models.ForeignKey(Invoices,on_delete=models.CASCADE)
+    user_id = models.ForeignKey(UserRole,on_delete=models.CASCADE)
+    remaining_price = models.FloatField()
+
 class Post_for_sale(models.Model):
   no_of_units = models.IntegerField()
   per_unit_price = models.FloatField()
@@ -174,7 +178,10 @@ class Post_for_sale(models.Model):
   post_date = models.DateField(default=timezone.now())
   from_date = models.DateField()
   to_date = models.DateField()
+  sold = models.BooleanField(default=False)
   post_dateTime = models.DateTimeField(default=timezone.now())
+  configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE)
+  is_admin =  models.BooleanField()
 
 class Buyers(models.Model):
     user_id = models.ForeignKey(UserRole, on_delete=models.CASCADE)
