@@ -1,6 +1,7 @@
 from django.urls import path , include
 from . import views
 
+#  user = user role id
 urlpatterns = [
     # path('Login/',views.LoginAPI),
     # path('Register/',views.RegisterAPI),
@@ -17,11 +18,11 @@ urlpatterns = [
     # manually entered
     path('BankAccDetails/',views.BankAccDetailsAPI), 
     path('Credit_Funds/',views.Credit_FundsAPI), #bank_to_wallet
-    path('ledger/<int:user_role_id>',views.LedgerAPI),
+    path('ledger/<int:user>',views.LedgerAPI),
+    path('GetDetails/<int:user>',views.GetDetails),
     path('ToBuy/',views.TobuyAPI), #wallet_to_buy
     path('PostForSell/',views.ToSellAPI), #sell_to_wallet
     # path('BuyerIRR/<int:invoice_id>',views.BuyerIRRAPI),
-    path('GetDetails/<int:user_role_id>',views.GetDetails),
     path('AdminSettings/', views.create_entry, name='create_entry'),
     path('showFunds/<int:user_role_id>',views.ShowFundsAPI),
     path('cashFlow/<int:invoiceID>/',views.cashFlowAPI)

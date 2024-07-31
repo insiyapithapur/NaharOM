@@ -545,6 +545,49 @@ def Credit_FundsAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
+def LedgerAPI(request, user):
+    if request.method == 'GET':
+        try:
+            try:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found"}, status=404)
+
+            bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
+            if not bank_accounts.exists():
+                return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
+
+            wallets = models.OutstandingBalance.objects.filter(bank_acc__in=bank_accounts)
+            if not wallets.exists():
+                return JsonResponse({"message": "No wallets found for this user role"}, status=404)
+
+            transactions = models.OutstandingBalanceTransaction.objects.filter(wallet__in=wallets).order_by('-time_date')
+
+            transactions_data = []
+            for transaction in transactions:
+                transactions_data.append({
+                    "transaction_id": str(transaction.transaction_id),
+                    "type": transaction.type,
+                    "creditedAmount": transaction.creditedAmount,
+                    "debitedAmount": transaction.debitedAmount,
+                    "status": transaction.status,
+                    "source": transaction.source,
+                    "purpose": transaction.purpose,
+                    "bank_acc": transaction.bank_acc.account_number if transaction.bank_acc else None,
+                    "invoice": transaction.invoice.product_name if transaction.invoice else None,
+                    "time_date": transaction.time_date,
+                })
+
+            total_balance = sum(wallet.balance for wallet in wallets)
+
+            return JsonResponse({"transactions": transactions_data, "Balance": total_balance , "user" : user_role.user.id}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET method is allowed"}, status=405)
+    
+@csrf_exempt
 def ShowFundsAPI(request,user_role_id):
     if request.method == 'GET':
         try:
@@ -711,11 +754,11 @@ def ShowFundsAPI(request,user_role_id):
 #         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
 @csrf_exempt
-def GetDetails(request, user_role_id):
+def GetDetails(request, user):
     if request.method == 'GET':
         try:
             try:
-                userRole = models.UserRole.objects.get(id=user_role_id)
+                userRole = models.UserRole.objects.get(id=user)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "user_role_id doesn't exist"}, status=400)
 
@@ -813,7 +856,7 @@ def GetDetails(request, user_role_id):
                     invoice_data_list.append(invoice_data)
                     print(f"Buyer {buyer} has not posted any units for sale.")
 
-            return JsonResponse({"invoices": invoice_data_list}, status=200)
+            return JsonResponse({"invoices": invoice_data_list , "user" : userRole.user.id}, status=200)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
@@ -1014,49 +1057,6 @@ def ToSellAPI(request):
 
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-    
-@csrf_exempt
-def LedgerAPI(request, user_role_id):
-    if request.method == 'GET':
-        try:
-            try:
-                user_role = models.UserRole.objects.get(id=user_role_id)
-            except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
-
-            bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-            if not bank_accounts.exists():
-                return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
-
-            wallets = models.OutstandingBalance.objects.filter(bank_acc__in=bank_accounts)
-            if not wallets.exists():
-                return JsonResponse({"message": "No wallets found for this user role"}, status=404)
-
-            transactions = models.OutstandingBalanceTransaction.objects.filter(wallet__in=wallets).order_by('-time_date')
-
-            transactions_data = []
-            for transaction in transactions:
-                transactions_data.append({
-                    "transaction_id": str(transaction.transaction_id),
-                    "type": transaction.type,
-                    "creditedAmount": transaction.creditedAmount,
-                    "debitedAmount": transaction.debitedAmount,
-                    "status": transaction.status,
-                    "source": transaction.source,
-                    "purpose": transaction.purpose,
-                    "bank_acc": transaction.bank_acc.account_number if transaction.bank_acc else None,
-                    "invoice": transaction.invoice.product_name if transaction.invoice else None,
-                    "time_date": transaction.time_date,
-                })
-
-            total_balance = sum(wallet.balance for wallet in wallets)
-
-            return JsonResponse({"transactions": transactions_data, "Balance": total_balance}, status=200)
-
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
 @csrf_exempt
 def create_entry(request):
