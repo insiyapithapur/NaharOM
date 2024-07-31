@@ -232,7 +232,7 @@ def verifyStatusAPI(request,user):
                 else :
                     is_BankDetailsExists = False
 
-            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id },status=200)
+            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id  , 'user_role' : userRole.role},status=200)
         
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
@@ -602,157 +602,6 @@ def ShowFundsAPI(request,user_role_id):
     else:
         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
-# from_date , to_date , expiration and withdrawn
-# @csrf_exempt
-# def GetDetails(request,user_role_id):
-#     if request.method == 'GET':
-#         try:
-#             # InterestcutoffTime = models.AdminSettings.objects.get(id=1)
-#             try:
-#                 userRole = models.UserRole.objects.get(id = user_role_id)
-#             except models.UserRole.DoesNotExist:
-#                 return JsonResponse({"message":"user_role_id doesn't exist"},status=400)
-
-#             invoices = models.Invoices.objects.filter(expired=False)
-#             print(invoices.count())
-
-#             invoice_data_list = []
-#             processed_invoices = set()
-
-#             for invoice in invoices:
-
-#                 fractional_units = models.FractionalUnits.objects.filter(invoice=invoice, current_owner__isnull=True)
-
-#                 for unit in fractional_units:
-#                     post_for_sale_units = models.Post_For_Sale_UnitTracker.objects.filter(unitID=unit, sellersID__isnull=True)
-
-#                     if post_for_sale_units.exists():
-#                         for post_for_sale_unit in post_for_sale_units:
-#                             if post_for_sale_unit.post_for_saleID.user_id.user.is_admin:
-#                                 isAdmin = True
-#                                 break
-
-#                         invoice_data = {
-#                             'id' : invoice.id,
-#                             'Invoice_id': invoice.invoice_id,
-#                             'Invoice_primary_id': invoice.primary_invoice_id,
-#                             'Invoice_no_of_units': post_for_sale_unit.,
-#                             'Invoice_remaining_units': invoice.no_of_units,  
-#                             'Invoice_per_unit_price': invoice.per_unit_price,
-#                             'Invoice_name': invoice.product_name,
-#                             'Invoice_post_date': invoice.created_At.date(),
-#                             'Invoice_post_time': invoice.created_At.time(),
-#                             'Invoice_interest': invoice.interest,
-#                             'Invoice_xirr': invoice.xirr,
-#                             'Invoice_irr': invoice.irr,
-#                             'Invoice_tenure_in_days': invoice.tenure_in_days,
-#                             'Invoice_expiration_time': invoice.expiration_time,
-#                             'Invoice_sold': invoice.sold,
-#                             # 'Interest_cut_off_time': InterestcutoffTime.interest_cut_off_time,
-#                             'isAdmin': isAdmin,
-#                             'type': 'CanBuy'
-#                         }
-#                         invoice_data_list.append(invoice_data)
-#                         processed_invoices.add(invoice.id)
-#                         break
-            
-#             resell_invoices = models.Post_for_sale.objects.filter(
-#                 Q(remaining_units__gt=0) & 
-#                 ~Q(user_id=userRole)
-#             )
-
-#             for post_for_sale in resell_invoices:
-#                 if not post_for_sale.user_id.user.is_admin:
-#                     invoice = post_for_sale.invoice_id
-#                     invoice_data = {
-#                             'id' : invoice.id,
-#                             'Invoice_id': invoice.invoice_id,
-#                             'Invoice_primary_id': invoice.primary_invoice_id,
-#                             'Post_for_Sell_id' : post_for_sale.id,
-#                             'Invoice_no_of_units': post_for_sale.no_of_units,
-#                             'Invoice_remaining_units': post_for_sale.no_of_units,
-#                             'Invoice_per_unit_price': post_for_sale.per_unit_price,
-#                             'Invoice_name': invoice.product_name,
-#                             'Invoice_post_date': post_for_sale.post_date,
-#                             'Invoice_post_time': post_for_sale.post_time,
-#                             'Invoice_interest': invoice.interest,
-#                             'Invoice_xirr': invoice.xirr,
-#                             'Invoice_irr': invoice.irr,
-#                             'Invoice_tenure_in_days': invoice.tenure_in_days,
-#                             'Invoice_expiration_time': invoice.expiration_time,
-#                             'Invoice_sold': invoice.sold,
-#                             'isAdmin': False,  
-#                             'type': 'CanBuy'
-#                         }
-#                     invoice_data_list.append(invoice_data)
-
-#             buyers = models.Buyers.objects.filter(user_id=userRole)
-#             print(buyers.count())
-#             for buyer in buyers:
-#                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
-#                 has_posted_for_sale = buyer_units.filter(post_for_saleID__isnull=False).exists()
-                
-#                 if has_posted_for_sale:
-#                     # If any unit has been posted for sale, the buyer has done a post for sale
-#                     first_unit = buyer_units.first()
-#                     invoice = first_unit.unitID.invoice
-#                     invoice_data = {
-#                         'id': invoice.id,
-#                         'Invoice_id': invoice.invoice_id,
-#                         'Invoice_primary_id': invoice.primary_invoice_id,
-#                         'Buyer_id' : first_unit.buyer_id.id,
-#                         'Invoice_no_of_units': first_unit.buyer_id.no_of_units,
-#                         'Invoice_remaining_units': first_unit.buyer_id.no_of_units,
-#                         'Invoice_per_unit_price': first_unit.buyer_id.per_unit_price_invested,
-#                         'Invoice_name': invoice.product_name,
-#                         'Invoice_post_date': first_unit.buyer_id.purchase_date,
-#                         'Invoice_post_time': first_unit.buyer_id.purchase_time,
-#                         'Invoice_interest': invoice.interest,
-#                         'Invoice_xirr': invoice.xirr,
-#                         'Invoice_irr': invoice.irr,
-#                         'Invoice_tenure_in_days': invoice.tenure_in_days,
-#                         'Invoice_expiration_time': invoice.expiration_time,
-#                         'Invoice_sold': invoice.sold,
-#                         'Invoice_posted_for_sale': has_posted_for_sale,
-#                         'isAdmin': False,
-#                         'type': 'Bought'
-#                     }
-#                     invoice_data_list.append(invoice_data)
-#                     print(f"Buyer {buyer} has posted a unit for sale.")
-
-#                 if not has_posted_for_sale:
-#                     # If no units have been posted for sale, the buyer has not done a post for sale
-#                     first_Unit = buyer_units.first()
-#                     invoice = first_Unit.unitID.invoice
-#                     invoice_data = {
-#                         'id': invoice.id,
-#                         'Invoice_id': invoice.invoice_id,
-#                         'Invoice_primary_id': invoice.primary_invoice_id,
-#                         'Buyer_id' : first_Unit.buyer_id.id,
-#                         'Invoice_no_of_units': first_Unit.buyer_id.no_of_units,
-#                         'Invoice_remaining_units': first_Unit.buyer_id.no_of_units,
-#                         'Invoice_per_unit_price': first_Unit.buyer_id.per_unit_price_invested,
-#                         'Invoice_name': invoice.product_name,
-#                         'Invoice_post_date': first_Unit.buyer_id.purchase_date,
-#                         'Invoice_post_time': first_Unit.buyer_id.purchase_time,
-#                         'Invoice_interest': invoice.interest,
-#                         'Invoice_xirr': invoice.xirr,
-#                         'Invoice_irr': invoice.irr,
-#                         'Invoice_tenure_in_days': invoice.tenure_in_days,
-#                         'Invoice_expiration_time': invoice.expiration_time,
-#                         'Invoice_sold': invoice.sold,
-#                         'Invoice_posted_for_sale': has_posted_for_sale,
-#                         'isAdmin': False,
-#                         'type': 'Bought'
-#                     }
-#                     invoice_data_list.append(invoice_data)
-#                     print(f"Buyer {buyer} has not posted any units for sale.")
-#             return JsonResponse({"invoices": invoice_data_list}, status=200)
-#         except Exception as e:
-#             return JsonResponse({"message": str(e)}, status=500)
-#     else:
-#         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
-
 @csrf_exempt
 def GetDetails(request, user):
     if request.method == 'GET':
@@ -763,15 +612,12 @@ def GetDetails(request, user):
                 return JsonResponse({"message": "user_role_id doesn't exist"}, status=400)
 
             invoices = models.Invoices.objects.filter(expired=False)
-            print(invoices.count())
 
             invoice_data_list = []
 
             for invoice in invoices:
                 post_for_sales = models.Post_for_sale.objects.filter(invoice_id = invoice ,sold=False,remaining_units__gt=0)
-                print("post_for_sales.count() : ",post_for_sales.count())
                 for post_for_sale in post_for_sales:
-                        print("post_for_sale :",post_for_sale.id)
                         if post_for_sale.user_id == userRole:
                             break
                         invoice_data = {
@@ -788,6 +634,8 @@ def GetDetails(request, user):
                             'Invoice_interest': invoice.interest,
                             'Invoice_xirr': invoice.xirr,
                             'Invoice_irr': invoice.irr,
+                            'Invoice_from_date' : post_for_sale.from_date,
+                            'Invoice_to_date' : post_for_sale.to_date ,
                             'Invoice_tenure_in_days': invoice.tenure_in_days,
                             'Invoice_expiration_time': invoice.expiration_time,
                             'Invoice_sold': invoice.is_fractionalized,
@@ -797,7 +645,6 @@ def GetDetails(request, user):
                         invoice_data_list.append(invoice_data)
 
             buyers = models.Buyers.objects.filter(user_id=userRole)
-            print(buyers.count())
             for buyer in buyers:
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
                 has_posted_for_sale = buyer_units.filter(post_for_saleID__isnull=False).exists()
@@ -827,7 +674,6 @@ def GetDetails(request, user):
                         'type': 'Bought'
                     }
                     invoice_data_list.append(invoice_data)
-                    print(f"Buyer {buyer} has posted a unit for sale.")
 
                 if not has_posted_for_sale:
                     first_unit = buyer_units.first()
@@ -854,7 +700,6 @@ def GetDetails(request, user):
                         'type': 'Bought'
                     }
                     invoice_data_list.append(invoice_data)
-                    print(f"Buyer {buyer} has not posted any units for sale.")
 
             return JsonResponse({"invoices": invoice_data_list , "user" : userRole.id}, status=200)
         except Exception as e:
@@ -870,7 +715,7 @@ def TobuyAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            userRoleID = data.get('userRoleID')
+            userRoleID = data.get('user')
             postForSaleID = data.get('postForSaleID')
             no_of_units = data.get('no_of_units')
 
@@ -880,7 +725,7 @@ def TobuyAPI(request):
                 return JsonResponse({"message": "User not found"}, status=404)
 
             try:
-                bankAcc = models.BankAccountDetails.objects.get(user_role=userRoleID)
+                bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
                 buyer_wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
             except models.OutstandingBalance.DoesNotExist:
                 return JsonResponse({"message": "Buyer Wallet not found"}, status=404)
@@ -956,7 +801,7 @@ def TobuyAPI(request):
                     status = 'response' ,
                     source = 'wallet_to_buy',
                     bank_acc = seller_wallet.bank_acc,
-                    invoice = postForSale.invoice_id.id ,
+                    invoice = postForSale.invoice_id ,
                     time_date = timezone.now()
                 )
 
@@ -968,7 +813,7 @@ def TobuyAPI(request):
                     status = 'response' ,
                     source = 'sell_to_wallet',
                     bank_acc = buyer_wallet.bank_acc ,
-                    invoice = postForSale.invoice_id.id,
+                    invoice = postForSale.invoice_id,
                     time_date = timezone.now()
                 )
 
