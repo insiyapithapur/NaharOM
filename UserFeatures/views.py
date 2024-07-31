@@ -212,25 +212,25 @@ def verifyStatusAPI(request,user):
                 Individual_Detials_exist = models.IndividualDetails.objects.filter(user_role=userRole).exists()
                 BankAcc_Details_exist = models.BankAccountDetails.objects.filter(user_role=userRole).exists()
                 if Individual_Detials_exist :
-                    is_KYC = "True"
+                    is_KYC = True
                 else :
-                    is_KYC = "False"
+                    is_KYC = False
                 if BankAcc_Details_exist :
-                    is_BankDetailsExists = "True"
+                    is_BankDetailsExists = True
                 else :
-                    is_BankDetailsExists = "False"
+                    is_BankDetailsExists = False
 
             elif userRole.role == 'Company' :
                 Company_Detials_exist = models.CompanyDetails.objects.filter(user_role=userRole).exists()
                 BankAcc_Details_exist = models.BankAccountDetails.objects.filter(user_role=userRole).exists()
                 if Company_Detials_exist :
-                    is_KYC = "True"
+                    is_KYC = True
                 else :
-                    is_KYC = "False"
+                    is_KYC = False
                 if BankAcc_Details_exist :
-                    is_BankDetailsExists = "True"
+                    is_BankDetailsExists = True
                 else :
-                    is_BankDetailsExists = "False"
+                    is_BankDetailsExists = False
 
             return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id },status=200)
         
