@@ -10,50 +10,119 @@ from django.utils.dateparse import parse_time
 import requests
 from django.db.models import Q
 
+# @csrf_exempt
+# def RegisterAPI(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             mobile = data.get('mobile')
+#             role = data.get('role')
+
+#             if not mobile or not role:
+#                 return JsonResponse({"message": "Mobile and role are required"}, status=400)
+
+#             try:
+#                 user = models.User.objects.get(mobile = mobile)
+#                 user_role = models.UserRole.objects.get(user = user , role = role)
+#                 return JsonResponse({"message": "User already exist"}, status=400)
+#             except models.UserRole.DoesNotExist:
+#                 #  api integrate , mobile --> email
+#                 user = models.User.objects.create(
+#                     mobile=mobile,
+#                     email="default8141@gmail.com"
+#                 )
+#                 user_role = models.UserRole.objects.create(
+#                     user=user,
+#                     role=role
+#                 )
+
+#                 return JsonResponse({
+#                     "message": "User registered successfully",
+#                     "user_role_id": user_role.id
+#                 }, status=201)
+            
+#             # existing_roles = models.UserRole.objects.filter(user=user).values_list('role', flat=True)
+#             # if role in existing_roles:
+#             #     return JsonResponse({"message": f"User already registered with role '{role}'"}, status=400)
+            
+#             # if 'company' in existing_roles and 'individual' in existing_roles:
+#             #     return JsonResponse({"message": "Already created both roles for this email"}, status=400)
+
+#             # user_role = models.UserRole.objects.create(
+#             #     user=user,
+#             #     role=role
+#             # )
+#             # return JsonResponse({"message": "Role added to existing user", "user_role_id": user_role.id}, status=201)
+
+#         except json.JSONDecodeError:
+#             return JsonResponse({"message": "Invalid JSON"}, status=400)
+#         except Exception as e:
+#             return JsonResponse({"message": str(e)}, status=500)
+#     else:
+#         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+    
+# @csrf_exempt
+# def LoginAPI(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             mobile = data.get('mobile')
+#             role = data.get('role')
+
+#             if not mobile or not role:
+#                 return JsonResponse({"message": "Email, password, and role are required"}, status=400)
+
+#             try:
+#                 user = models.User.objects.get(mobile=mobile)
+#                 print(user)
+#                 if user:
+#                     try:
+#                         user_role = models.UserRole.objects.get(user=user, role=role)
+#                         return JsonResponse({"message": "Login successful", "user_role_id": user_role.id}, status=200)
+#                     except models.UserRole.DoesNotExist:
+#                         return JsonResponse({"message": "Role mismatch for the given email"}, status=400)
+#                 else:
+#                     return JsonResponse({"message": "Invalid email or password"}, status=401)
+#             except models.User.DoesNotExist:
+#                 return JsonResponse({"message": "Email doesn't exist"}, status=401)
+#         except json.JSONDecodeError:
+#             return JsonResponse({"message": "Invalid JSON"}, status=400)
+#     else:
+#         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+# @csrf_exempt
+# def ChangeStatusAPI(request):
+#     if request.method == 'GET':
+
 @csrf_exempt
-def RegisterAPI(request):
+def GenerateOtpAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            mobile = data.get('mobile')
-            role = data.get('role')
+            country_code = data.get('countryCode')
+            mobile_number = data.get('mobileNumber')
 
-            if not mobile or not role:
-                return JsonResponse({"message": "Mobile and role are required"}, status=400)
+            if not country_code or not mobile_number:
+                return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
 
-            try:
-                user = models.User.objects.get(mobile = mobile)
-                user_role = models.UserRole.objects.get(user = user , role = role)
-                return JsonResponse({"message": "User already exist"}, status=400)
-            except models.UserRole.DoesNotExist:
-                #  api integrate , mobile --> email
-                user = models.User.objects.create(
-                    mobile=mobile,
-                    email="default8141@gmail.com"
-                )
-                user_role = models.UserRole.objects.create(
-                    user=user,
-                    role=role
-                )
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
+            headers = {
+                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+                'Content-Type': 'application/json'
+            }
 
-                return JsonResponse({
-                    "message": "User registered successfully",
-                    "user_role_id": user_role.id
-                }, status=201)
-            
-            # existing_roles = models.UserRole.objects.filter(user=user).values_list('role', flat=True)
-            # if role in existing_roles:
-            #     return JsonResponse({"message": f"User already registered with role '{role}'"}, status=400)
-            
-            # if 'company' in existing_roles and 'individual' in existing_roles:
-            #     return JsonResponse({"message": "Already created both roles for this email"}, status=400)
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number
+            }
 
-            # user_role = models.UserRole.objects.create(
-            #     user=user,
-            #     role=role
-            # )
-            # return JsonResponse({"message": "Role added to existing user", "user_role_id": user_role.id}, status=201)
+            response = requests.post(url, headers=headers, json=payload)
+            print(response.json)
 
+            if response.status_code == 200:
+                return JsonResponse(response.json(), status=200)
+            else:
+                return JsonResponse({"message": response.json()}, status=response.status_code)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -62,38 +131,289 @@ def RegisterAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
     
 @csrf_exempt
-def LoginAPI(request):
+def VerifyOtpAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            mobile = data.get('mobile')
-            role = data.get('role')
+            country_code = data.get('countryCode')
+            mobile_number = data.get('mobileNumber')
+            reference_id = data.get('referenceId')
+            otp = data.get('otp')
+            extra_fields = data.get('extraFields')
 
-            if not mobile or not role:
-                return JsonResponse({"message": "Email, password, and role are required"}, status=400)
+            user_role = data.get('user_role')
 
-            try:
-                user = models.User.objects.get(mobile=mobile)
-                print(user)
-                if user:
-                    try:
-                        user_role = models.UserRole.objects.get(user=user, role=role)
-                        return JsonResponse({"message": "Login successful", "user_role_id": user_role.id}, status=200)
-                    except models.UserRole.DoesNotExist:
-                        return JsonResponse({"message": "Role mismatch for the given email"}, status=400)
-                else:
-                    return JsonResponse({"message": "Invalid email or password"}, status=401)
-            except models.User.DoesNotExist:
-                return JsonResponse({"message": "Email doesn't exist"}, status=401)
+            if not all([country_code, mobile_number, reference_id, otp, str(extra_fields)]):
+                return JsonResponse({"message": "All fields are required"}, status=400)
+
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
+            headers = {
+                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+                'Content-Type': 'application/json'
+            }
+
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number,
+                "referenceId": reference_id,
+                "otp": otp,
+                "extraFields": extra_fields
+            }
+
+            response = requests.post(url, headers=headers, json=payload)
+
+            if response.status_code == 200:
+                try:
+                    user = models.User.objects.get(mobile = mobile_number)
+                    userRole = models.UserRole.objects.get(user = user)
+                    if userRole.role != user_role:
+                        return JsonResponse({"message":"user role is not match"},status=400)
+                    return JsonResponse({
+                            "message": "User already registered",
+                            "signzy_Response" : response.json(),
+                            "user_id": userRole.id 
+                        }, status=200)
+                except models.User.DoesNotExist:
+                    with transaction.atomic():
+                        user = models.User.objects.create(
+                            mobile=mobile_number,
+                            email="default@gmail.com"
+                        )
+                        userRole = models.UserRole.objects.create(
+                            user = user,
+                            role = userRole,
+                        )
+                        return JsonResponse({
+                            "message": "User registered successfully",
+                            "signzy_Response" : response.json(),
+                            "user_id": userRole.id 
+                        }, status=201)
+                except models.UserRole.DoesNotExist:
+                    return JsonResponse({"message":"User id exist but not userRole"},status=200)
+            else:
+                return JsonResponse({"message": response.json()}, status=response.status_code)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
-# @csrf_exempt
-# def ChangeStatusAPI(request):
-#     if request.method == 'GET':
-           
+@csrf_exempt
+def verifyStatusAPI(request,userID):
+    if request.method == 'GET':
+        try:
+            if not userID:
+                return JsonResponse({"message": "userID should be there in url"}, status=400)
+
+            userRole = models.UserRole.objects.get(id=userID)
+
+            if userRole.role == 'Individual' :
+                Individual_Detials_exist = models.IndividualDetails.objects.filter(user_role=userRole).exists()
+                BankAcc_Details_exist = models.BankAccountDetails.objects.filter(user_role=userRole).exists()
+                if Individual_Detials_exist :
+                    is_KYC = True
+                else :
+                    is_KYC = False
+                if BankAcc_Details_exist :
+                    is_BankDetailsExists = True
+                else :
+                    is_BankDetailsExists = False
+
+            elif userRole.role == 'Company' :
+                Company_Detials_exist = models.CompanyDetails.objects.filter(user_role=userRole).exists()
+                BankAcc_Details_exist = models.BankAccountDetails.objects.filter(user_role=userRole).exists()
+                if Company_Detials_exist :
+                    is_KYC = True
+                else :
+                    is_KYC = False
+                if BankAcc_Details_exist :
+                    is_BankDetailsExists = True
+                else :
+                    is_BankDetailsExists = False
+
+            return JsonResponse({"is_KYC":is_KYC , "is_BankDetailsExists":is_BankDetailsExists},status=200)
+        
+        except models.UserRole.DoesNotExist:
+            return JsonResponse({"message" : "user ID does not exist"},status=400) 
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
+# city
+@csrf_exempt
+def phonetoPrefillAPI(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            userID = data.get('userID')
+            fullName = data.get('fullName')
+            if not all([userID,fullName]):
+                return JsonResponse({"message": "All fields are required"}, status=400)
+
+            userRole = models.UserRole.objects.get(id=userID)
+
+            url = 'https://api-preproduction.signzy.app/api/v3/phonekyc/phone-prefill-v2'
+            headers = {
+                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+                'Content-Type': 'application/json'
+            }
+
+            payload = {
+                "mobileNumber": userRole.user.mobile,
+                "fullName": fullName ,
+                "consent": {
+                    "consentFlag": True,
+                    "consentTimestamp": 17000,
+                    "consentIpAddress": "684D:1111:222:3333:4444:5555:6:77",
+                    "consentMessageId": "CM_1"
+                }
+            }
+
+            response = requests.post(url, headers=headers, json=payload)
+            print(response.json())
+            response_data = response.json()
+            if response.status_code == 200:
+                response_info = response_data['response']
+                
+                alternate_phone_numbers = [phone['phoneNumber'] for phone in response_info['alternatePhone']]
+                alternate_phone = next((phone for phone in alternate_phone_numbers if phone != userRole.user.mobile), None)
+
+                email = response_info['email'][0]['email'] if response_info['email'] else None
+
+                addresses = response_info['address'][:2]
+                address1 = addresses[0] if len(addresses) > 0 else None
+                address2 = addresses[1] if len(addresses) > 1 else None
+
+                pan_card_number = response_info['PAN'][0]['IdNumber'] if response_info['PAN'] else None
+
+                first_name = response_info['name']['firstName'] if 'name' in response_info and 'firstName' in response_info['name'] else None
+                last_name = response_info['name']['lastName'] if 'name' in response_info and 'lastName' in response_info['name'] else None
+
+                state = response_info['address'][0]['State'] if response_info['address'] else None
+                postal_code = response_info['address'][0]['Postal'] if response_info['address'] else None
+
+                prefill_data = {
+                    # "city"
+                    "alternatePhone": alternate_phone,
+                    "email": email,
+                    "address1": address1,
+                    "address2": address2,
+                    "panCardNumber": pan_card_number,
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "state": state,
+                    "postalCode": postal_code
+                }
+
+                return JsonResponse({"prefillData": prefill_data}, status=200)
+            return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
+        except models.UserRole.DoesNotExist:
+            return JsonResponse({"message" : "user ID does not exist"},status=400) 
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
+
+@csrf_exempt
+def SubmitProfileAPI(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        userID = data.get('userID')
+
+        if not userID:
+            return JsonResponse({"message": "userID should be there"}, status=400)
+
+        
+        with transaction.atomic():
+            try :
+                user_role = models.UserRole(id=userID)
+
+                if user_role.role == 'Individual':
+                    alternatePhone = data.get('alternate_phone')
+                    email= data.get('email')
+                    address1= data.get('address1')
+                    address2= data.get('address2')
+                    panCardNumber= data.get('panCardNumber')
+                    firstName = data.get('firstName')
+                    lastName = data.get('lastName')
+                    state = data.get('state')
+                    postalCode = data.get('postal_code')
+
+                    if not all([alternatePhone, email, address1, address2, panCardNumber, firstName, lastName, state, postalCode]):
+                        return JsonResponse({"message": "All fields are required"}, status=400)
+
+                    user_role.user.email = email
+                    user_role.save()
+
+                    individualProfile = models.IndividualDetails.objects.create(
+                        user_role = user_role ,
+                        first_name = firstName,
+                        last_name = lastName ,
+                        addressLine1 = address1 ,
+                        addressLine2 = address2 ,
+                        city = state ,
+                        state = state,
+                        pin_code = postalCode ,
+                        alternate_phone_no = alternatePhone ,
+                        created_at = timezone.now() ,
+                        updated_at = timezone.now() 
+                    )
+
+                    panCard = models.PanCardNos.objects(
+                        user_role = user_role,
+                        pan_card_no = panCardNumber ,
+                        created_at = timezone.now()
+                    )
+
+                    return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id},status=200)
+                
+                elif user_role.role == 'Company':
+                    company_name = data.get('company_name')
+                    addressLine1 = data.get('addressLine1')
+                    addressLine2 = data.get('addressLine2')
+                    city = data.get('city')
+                    state = data.get('state')
+                    email = data.get('email')
+                    pin_no = data.get('pin_no')
+                    alternate_phone_no = data.get('alternate_phone_no')
+                    company_pan_no = data.get('company_pan_no')
+                    public_url_company = data.get('public_url_company')
+
+                    if not all([company_name, addressLine1, addressLine2, city, state ,email,company_pan_no, pin_no, alternate_phone_no, public_url_company]):
+                        return JsonResponse({"message": "All fields are required"}, status=400)
+
+                    user_role.user.email = email
+                    user_role.save()
+
+                    companyProfile = models.CompanyDetails.objects.create(
+                        user_role = user_role ,
+                        company_name = company_name ,
+                        addressLine1 = addressLine1 ,
+                        addressLin2 = addressLine2,
+                        city = city,
+                        state = state,
+                        pin_no = pin_no ,
+                        alternate_phone_no = alternate_phone_no,
+                        public_url_company = public_url_company ,
+                        created_at = timezone.now() ,
+                        updated_at = timezone.now()
+                    )
+
+                    panCard = models.PanCardNos.objects(
+                        user_role = user_role,
+                        pan_card_no = company_pan_no ,
+                        created_at = timezone.now()
+                    )
+
+                    return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id},status=200)
+                else :
+                    return JsonResponse({"message" : "Role is not matched"},state=400)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message":"userID does not found"},status=400)
+    else:
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 @csrf_exempt
 def BankAccDetailsAPI(request):
     if request.method == 'POST':
@@ -767,109 +1087,6 @@ def create_entry(request):
             new_entry = models.AdminSettings.objects.create(interest_cut_off_time=interest_cut_off_time)
             return JsonResponse({"message": "Entry created successfully", "id": new_entry.id ,'interest_cut_of_time' : new_entry.interest_cut_off_time}, status=201)
         
-        except json.JSONDecodeError:
-            return JsonResponse({"message": "Invalid JSON"}, status=400)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-
-@csrf_exempt
-def GenerateOtpAPI(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            country_code = data.get('countryCode')
-            print(country_code)
-            mobile_number = data.get('mobileNumber')
-            print(mobile_number)
-
-            if not country_code or not mobile_number:
-                return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
-
-            url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
-            headers = {
-                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-                'Content-Type': 'application/json'
-            }
-
-            payload = {
-                "countryCode": country_code,
-                "mobileNumber": mobile_number
-            }
-
-            response = requests.post(url, headers=headers, json=payload)
-            print(response.json)
-
-            if response.status_code == 200:
-                return JsonResponse(response.json(), status=200)
-            else:
-                return JsonResponse({"message": "Failed to generate OTP"}, status=response.status_code)
-        except json.JSONDecodeError:
-            return JsonResponse({"message": "Invalid JSON"}, status=400)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-    
-@csrf_exempt
-def VerifyOtpAPI(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            country_code = data.get('countryCode')
-            print(country_code)
-            mobile_number = data.get('mobileNumber')
-            print(mobile_number)
-            reference_id = data.get('referenceId')
-            print(reference_id)
-            otp = data.get('otp')
-            print(otp)
-            extra_fields = data.get('extraFields')
-            print(extra_fields)
-
-            userRole = data.get('user_role')
-
-            if not all([country_code, mobile_number, reference_id, otp, str(extra_fields)]):
-                return JsonResponse({"message": "All fields are required"}, status=400)
-
-            url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
-            headers = {
-                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-                'Content-Type': 'application/json'
-            }
-
-            payload = {
-                "countryCode": country_code,
-                "mobileNumber": mobile_number,
-                "referenceId": reference_id,
-                "otp": otp,
-                "extraFields": extra_fields
-            }
-
-            response = requests.post(url, headers=headers, json=payload)
-
-            if response.status_code == 200:
-                try:
-                    user = models.User.objects.get(mobile = mobile_number)
-                    return JsonResponse({"message": "User registered already"}, status=400)
-                except models.User.DoesNotExist:
-                    with transaction.atomic():
-                        user = models.User.objects.create(
-                            mobile=mobile_number,
-                            email="default@gmail.com"
-                        )
-                        userRole = models.UserRole.objects.create(
-                            user = user,
-                            role = userRole,
-                        )
-                        return JsonResponse({
-                            "message": "User registered successfully",
-                            "signzy_Response" : response.json(),
-                            "user_id": userRole.id 
-                        }, status=201)
-            else:
-                return JsonResponse({"message": response.json()}, status=response.status_code)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
