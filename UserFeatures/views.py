@@ -300,7 +300,7 @@ def phonetoPrefillAPI(request,user):
                     "postalCode": postal_code
                 }
 
-                return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,}, status=200)
+                return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
             return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
@@ -707,9 +707,6 @@ def GetDetails(request, user):
     else:
         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
-
-#  funds error handling
-#  invoice table no sold if fractionalunit table ma badha sold = true
 @csrf_exempt
 def TobuyAPI(request):
     if request.method == 'POST':
@@ -777,8 +774,12 @@ def TobuyAPI(request):
                     
                     models.Buyer_UnitsTracker.objects.create(
                         buyer_id=buyer,
+                        unitID=unit.unitID
+                    )
+
+                    models.Sales_UnitTracker.objects.create(
                         unitID=unit.unitID,
-                        post_for_saleID=postForSale
+                        sellersID=sales
                     )
 
                     unit.unitID.sold = True
@@ -823,7 +824,7 @@ def TobuyAPI(request):
                 if postForSale.remaining_units == 0:
                     postForSale.sold= True
 
-            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id}, status=201)        
+            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id,"user" : user_role.id}, status=201)        
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -837,15 +838,14 @@ def ToSellAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            userRoleID = data.get('userRoleID')
+            userRoleID = data.get('user')
             buyerID = data.get('buyerID')
-            invoiceID = data.get('invoiceID')
             no_of_units = data.get('no_of_units')
             per_unit_price = data.get('per_unit_price')
             from_date = data.get('from_date')
             to_date = data.get('to_date')
 
-            if not all([userRoleID, invoiceID, no_of_units, per_unit_price]):
+            if not all([userRoleID, no_of_units, per_unit_price]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
             try:
@@ -854,16 +854,25 @@ def ToSellAPI(request):
                 return JsonResponse({"message": "User role not found"}, status=404)
 
             try:
-                invoice = models.Invoices.objects.get(id=invoiceID)
-            except models.Invoices.DoesNotExist:
-                return JsonResponse({"message": "Invoice not found"}, status=404)
-
-            try:
                 buyer = models.Buyers.objects.get(id=buyerID)
             except models.Buyers.DoesNotExist:
                 return JsonResponse({"message": "Buyer not found"}, status=404)
 
             with transaction.atomic():
+
+                try :
+                    buyer_Units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer , post_for_saleID = None).order_by('id')[:no_of_units]
+                    # buyer_Units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
+                except models.Buyer_UnitsTracker.DoesNotExist:
+                    return JsonResponse({"message" : "buyer unit does not exits"},status=400)
+                print("buyer_Units.count() ",buyer_Units.count())
+                if buyer_Units.count() < no_of_units:
+                    return JsonResponse({"message": "Not enough units available for selling"}, status=400)
+            
+                for buyer_unit in buyer_Units:
+                    invoice = buyer_unit.unitID.invoice
+                    break
+
                 post_for_sale = models.Post_for_sale.objects.create(
                     no_of_units=no_of_units,
                     per_unit_price=per_unit_price,
@@ -878,21 +887,28 @@ def ToSellAPI(request):
                     post_dateTime=timezone.now()
                 )
 
-                units_for_selling = models.Buyer_UnitsTracker.objects.filter(
-                    buyer_id=buyer
-                    # post_for_saleID = None
-                ).order_by('id')[:no_of_units]
-
-                if units_for_selling.count() < no_of_units:
-                    return JsonResponse({"message": "Not enough units available for selling"}, status=400)
-
-                for unit in units_for_selling:
+                for buyer_unit in buyer_Units:
+                    buyer_unit.post_for_saleID = post_for_sale
                     models.Post_For_Sale_UnitTracker.objects.create(
-                        unitID=unit.unitID,
+                        unitID=buyer_unit.unitID,
                         post_for_saleID=post_for_sale
                     )
-                    unit.post_for_saleID = post_for_sale
-                    unit.save()
+
+                # units_for_selling = models.Buyer_UnitsTracker.objects.filter(
+                #     buyer_id=buyer
+                #     # post_for_saleID = None
+                # ).order_by('id')[:no_of_units]
+
+                # if units_for_selling.count() < no_of_units:
+                #     return JsonResponse({"message": "Not enough units available for selling"}, status=400)
+
+                # for unit in units_for_selling:
+                    # models.Post_For_Sale_UnitTracker.objects.create(
+                    #     unitID=unit.unitID,
+                    #     post_for_saleID=post_for_sale
+                    # )
+                    # unit.post_for_saleID = post_for_sale
+                    # unit.save()
                 return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": user_role.id}, status=201)
 
         except json.JSONDecodeError:
