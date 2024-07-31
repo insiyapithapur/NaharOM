@@ -189,7 +189,7 @@ def VerifyOtpAPI(request):
                             "user": userRole.id 
                         }, status=201)
                 except models.UserRole.DoesNotExist:
-                    return JsonResponse({"message":"User id exist but not userRole"},status=200)
+                    return JsonResponse({"message":"User id exist but not userRole"},status=404)
             else:
                 return JsonResponse({"message": response.json()}, status=response.status_code)
         except json.JSONDecodeError:
@@ -300,7 +300,7 @@ def phonetoPrefillAPI(request,user):
                     "postalCode": postal_code
                 }
 
-                return JsonResponse({"prefillData": prefill_data,"user" : userRole.user.id,}, status=200)
+                return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,}, status=200)
             return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
@@ -360,7 +360,7 @@ def SubmitProfileAPI(request):
                         created_at = timezone.now()
                     )
 
-                    return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.user.id},status=200)
+                    return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.id},status=200)
                 
                 elif user_role.role == 'Company':
                     company_name = data.get('company_name')
@@ -400,7 +400,7 @@ def SubmitProfileAPI(request):
                         created_at = timezone.now()
                     )
 
-                    return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.user.id},status=200)
+                    return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.id},status=200)
                 else :
                     return JsonResponse({"message" : "Role is not matched"},status=400)
             except models.UserRole.DoesNotExist:
@@ -442,7 +442,7 @@ def BankAccDetailsAPI(request):
                     account_type=account_type
                 )
 
-                return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id,"user" :user_role.user.id}, status=201)
+                return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id,"user" :user_role.id}, status=201)
 
             except KeyError:
                 return JsonResponse({"message": "Missing required fields"}, status=400)
@@ -530,7 +530,7 @@ def Credit_FundsAPI(request):
 
                 return JsonResponse({
                         "message": "Funds added successfully",
-                        "user" :user_role.user.id,
+                        "user" :user_role.id,
                         "wallet_balance": wallet.balance,
                         "transaction_id": Balancetransaction.transaction_id
                 }, status=200)
@@ -580,7 +580,7 @@ def LedgerAPI(request, user):
 
             total_balance = sum(wallet.balance for wallet in wallets)
 
-            return JsonResponse({"transactions": transactions_data, "Balance": total_balance , "user" : user_role.user.id}, status=200)
+            return JsonResponse({"transactions": transactions_data, "Balance": total_balance , "user" : user_role.id}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
@@ -856,7 +856,7 @@ def GetDetails(request, user):
                     invoice_data_list.append(invoice_data)
                     print(f"Buyer {buyer} has not posted any units for sale.")
 
-            return JsonResponse({"invoices": invoice_data_list , "user" : userRole.user.id}, status=200)
+            return JsonResponse({"invoices": invoice_data_list , "user" : userRole.id}, status=200)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
