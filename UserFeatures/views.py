@@ -161,9 +161,11 @@ def VerifyOtpAPI(request):
             }
 
             response = requests.post(url, headers=headers, json=payload)
+            print("response")
 
             if response.status_code == 200:
                 try:
+                    print("in try")
                     user = models.User.objects.get(mobile = mobile_number)
                     userRole = models.UserRole.objects.get(user = user)
                     if userRole.role != user_role:
@@ -174,6 +176,7 @@ def VerifyOtpAPI(request):
                             "user_id": userRole.id 
                         }, status=200)
                 except models.User.DoesNotExist:
+                    print("except")
                     with transaction.atomic():
                         user = models.User.objects.create(
                             mobile=mobile_number,
@@ -181,7 +184,7 @@ def VerifyOtpAPI(request):
                         )
                         userRole = models.UserRole.objects.create(
                             user = user,
-                            role = userRole,
+                            role = user_role,
                         )
                         return JsonResponse({
                             "message": "User registered successfully",
@@ -212,27 +215,27 @@ def verifyStatusAPI(request,userID):
                 Individual_Detials_exist = models.IndividualDetails.objects.filter(user_role=userRole).exists()
                 BankAcc_Details_exist = models.BankAccountDetails.objects.filter(user_role=userRole).exists()
                 if Individual_Detials_exist :
-                    is_KYC = True
+                    is_KYC = "True"
                 else :
-                    is_KYC = False
+                    is_KYC = "False"
                 if BankAcc_Details_exist :
-                    is_BankDetailsExists = True
+                    is_BankDetailsExists = "True"
                 else :
-                    is_BankDetailsExists = False
+                    is_BankDetailsExists = "False"
 
             elif userRole.role == 'Company' :
                 Company_Detials_exist = models.CompanyDetails.objects.filter(user_role=userRole).exists()
                 BankAcc_Details_exist = models.BankAccountDetails.objects.filter(user_role=userRole).exists()
                 if Company_Detials_exist :
-                    is_KYC = True
+                    is_KYC = "True"
                 else :
-                    is_KYC = False
+                    is_KYC = "False"
                 if BankAcc_Details_exist :
-                    is_BankDetailsExists = True
+                    is_BankDetailsExists = "True"
                 else :
-                    is_BankDetailsExists = False
+                    is_BankDetailsExists = "False"
 
-            return JsonResponse({"is_KYC":is_KYC , "is_BankDetailsExists":is_BankDetailsExists},status=200)
+            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists},status=200)
         
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
@@ -241,15 +244,11 @@ def verifyStatusAPI(request,userID):
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
-# city
 @csrf_exempt
-def phonetoPrefillAPI(request):
-    if request.method == 'POST':
+def phonetoPrefillAPI(request,userID):
+    if request.method == 'GET':
         try:
-            data = json.loads(request.body)
-            userID = data.get('userID')
-            fullName = data.get('fullName')
-            if not all([userID,fullName]):
+            if not all([userID]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
             userRole = models.UserRole.objects.get(id=userID)
@@ -262,7 +261,6 @@ def phonetoPrefillAPI(request):
 
             payload = {
                 "mobileNumber": userRole.user.mobile,
-                "fullName": fullName ,
                 "consent": {
                     "consentFlag": True,
                     "consentTimestamp": 17000,
@@ -272,7 +270,6 @@ def phonetoPrefillAPI(request):
             }
 
             response = requests.post(url, headers=headers, json=payload)
-            print(response.json())
             response_data = response.json()
             if response.status_code == 200:
                 response_info = response_data['response']
@@ -325,13 +322,12 @@ def SubmitProfileAPI(request):
         if not userID:
             return JsonResponse({"message": "userID should be there"}, status=400)
 
-        
         with transaction.atomic():
             try :
-                user_role = models.UserRole(id=userID)
+                user_role = models.UserRole.objects.get(id=userID)
 
                 if user_role.role == 'Individual':
-                    alternatePhone = data.get('alternate_phone')
+                    alternatePhone = data.get('alternatePhone')
                     email= data.get('email')
                     address1= data.get('address1')
                     address2= data.get('address2')
@@ -339,7 +335,7 @@ def SubmitProfileAPI(request):
                     firstName = data.get('firstName')
                     lastName = data.get('lastName')
                     state = data.get('state')
-                    postalCode = data.get('postal_code')
+                    postalCode = data.get('postalCode')
 
                     if not all([alternatePhone, email, address1, address2, panCardNumber, firstName, lastName, state, postalCode]):
                         return JsonResponse({"message": "All fields are required"}, status=400)
@@ -361,7 +357,7 @@ def SubmitProfileAPI(request):
                         updated_at = timezone.now() 
                     )
 
-                    panCard = models.PanCardNos.objects(
+                    panCard = models.PanCardNos.objects.create(
                         user_role = user_role,
                         pan_card_no = panCardNumber ,
                         created_at = timezone.now()
@@ -401,7 +397,7 @@ def SubmitProfileAPI(request):
                         updated_at = timezone.now()
                     )
 
-                    panCard = models.PanCardNos.objects(
+                    panCard = models.PanCardNos.objects.create(
                         user_role = user_role,
                         pan_card_no = company_pan_no ,
                         created_at = timezone.now()
@@ -409,11 +405,12 @@ def SubmitProfileAPI(request):
 
                     return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id},status=200)
                 else :
-                    return JsonResponse({"message" : "Role is not matched"},state=400)
+                    return JsonResponse({"message" : "Role is not matched"},status=400)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message":"userID does not found"},status=400)
     else:
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
+    
 @csrf_exempt
 def BankAccDetailsAPI(request):
     if request.method == 'POST':
@@ -434,7 +431,6 @@ def BankAccDetailsAPI(request):
                 account_number = data.get('account_number')
                 ifc_code = data.get('ifc_code')
                 account_type = data.get('account_type')
-                print(account_number , ifc_code , account_type)
 
                 if not account_number or not ifc_code or not account_type:
                     return JsonResponse({"message": "account_number, ifc_code, and account_type are required"}, status=400)
@@ -489,7 +485,6 @@ def BankAccDetailsAPI(request):
 @csrf_exempt
 def Credit_FundsAPI(request):
     if request.method == 'POST':
-        print("after post")
         try:
             data = json.loads(request.body)
             user_role_id = data.get('user_role_id')
@@ -501,51 +496,46 @@ def Credit_FundsAPI(request):
 
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
-                print(user_role)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
 
             try:
                 bank_account = models.BankAccountDetails.objects.get(id=bank_acc_id, user_role=user_role)
-                print(bank_account)
             except models.BankAccountDetails.DoesNotExist:
                 return JsonResponse({"message": "Bank account not found for the given user role"}, status=404)
+            
+            with transaction.atomic():
+                try:
+                    wallet = models.OutstandingBalance.objects.get(bank_acc=bank_account)
+                    wallet.balance += amount
+                    wallet.updated_at = timezone.now().date()
+                    wallet.save()
+                except models.OutstandingBalance.DoesNotExist:
+                    wallet = models.OutstandingBalance.objects.create(
+                        bank_acc=bank_account,
+                        balance=amount,
+                        updated_at=timezone.now().date()
+                    )
 
-            try:
-                print("in try")
-                wallet = models.OutstandingBalance.objects.get(bank_acc=bank_account)
-                print(wallet)
-                wallet.balance += amount
-                wallet.updated_at = timezone.now().date()
-                wallet.save()
-            except models.OutstandingBalance.DoesNotExist:
-                wallet = models.OutstandingBalance.objects.create(
-                    bank_acc=bank_account,
-                    balance=amount,
-                    updated_at=timezone.now().date()
-                )
-                print(wallet)
+                Balancetransaction = models.OutstandingBalanceTransaction.objects.create(
+                        wallet=wallet,
+                        transaction_id=uuid.uuid4(),
+                        type='Credited',
+                        creditedAmount=amount,
+                        debitedAmount=None,
+                        status='response',
+                        source='bank_to_wallet',
+                        purpose='Funds added to wallet',
+                        bank_acc=bank_account,
+                        invoice=None,
+                        time_date=timezone.now()
+                    )
 
-            transaction = models.OutstandingBalanceTransaction.objects.create(
-                wallet=wallet,
-                transaction_id=uuid.uuid4(),
-                type='Credited',
-                creditedAmount=amount,
-                debitedAmount=None,
-                status='response',
-                source='bank_to_wallet',
-                purpose='Funds added to wallet',
-                bank_acc=bank_account,
-                invoice=None,
-                time_date=timezone.now()
-            )
-            print(transaction)
-
-            return JsonResponse({
-                "message": "Funds added successfully",
-                "wallet_balance": wallet.balance,
-                "transaction_id": transaction.transaction_id
-            }, status=200)
+                return JsonResponse({
+                        "message": "Funds added successfully",
+                        "wallet_balance": wallet.balance,
+                        "transaction_id": Balancetransaction.transaction_id
+                }, status=200)
 
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
@@ -1057,7 +1047,7 @@ def LedgerAPI(request, user_role_id):
                     "source": transaction.source,
                     "purpose": transaction.purpose,
                     "bank_acc": transaction.bank_acc.account_number if transaction.bank_acc else None,
-                    "invoice": transaction.invoice.name if transaction.invoice else None,
+                    "invoice": transaction.invoice.product_name if transaction.invoice else None,
                     "time_date": transaction.time_date,
                 })
 
