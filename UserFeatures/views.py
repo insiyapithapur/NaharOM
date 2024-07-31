@@ -334,33 +334,52 @@ def SubmitProfileAPI(request):
                     city = data.get('city')
                     postalCode = data.get('postalCode')
 
-                    if not all([alternatePhone, email, address1, address2, panCardNumber, firstName, lastName, state,city, postalCode]):
+                    if not all([alternatePhone, email, address1, address2, firstName, lastName, state,city, postalCode]):
                         return JsonResponse({"message": "All fields are required"}, status=400)
 
                     user_role.user.email = email
                     user_role.save()
 
-                    individualProfile = models.IndividualDetails.objects.create(
-                        user_role = user_role ,
-                        first_name = firstName,
-                        last_name = lastName ,
-                        addressLine1 = address1 ,
-                        addressLine2 = address2 ,
-                        city = city ,
-                        state = state,
-                        pin_code = postalCode ,
-                        alternate_phone_no = alternatePhone ,
-                        created_at = timezone.now() ,
-                        updated_at = timezone.now() 
-                    )
+                    try :
+                        # update
+                        individualProfileExistence = models.IndividualDetails.objects.get(user_role=user_role)
+                        individualProfileExistence.first_name = firstName
+                        individualProfileExistence.last_name = lastName 
+                        individualProfileExistence.addressLine1 = address1 
+                        individualProfileExistence.addressLine2 = address2 
+                        individualProfileExistence.city = city 
+                        individualProfileExistence.state = state
+                        individualProfileExistence.pin_code = postalCode 
+                        individualProfileExistence.alternate_phone_no = alternatePhone 
+                        individualProfileExistence.updated_at = timezone.now()
+                        individualProfileExistence.save() 
 
-                    panCard = models.PanCardNos.objects.create(
-                        user_role = user_role,
-                        pan_card_no = panCardNumber ,
-                        created_at = timezone.now()
-                    )
+                        return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfileExistence.id , "user" :user_role.id},status=200)
+                    
+                    except models.IndividualDetails.DoesNotExist :
+                        if not all([panCardNumber]):
+                            return JsonResponse({"message": "panCardNumber is required as it is new user"}, status=400)
+                        # create
+                        individualProfile = models.IndividualDetails.objects.create(
+                            user_role = user_role ,
+                            first_name = firstName,
+                            last_name = lastName ,
+                            addressLine1 = address1 ,
+                            addressLine2 = address2 ,
+                            city = city ,
+                            state = state,
+                            pin_code = postalCode ,
+                            alternate_phone_no = alternatePhone ,
+                            created_at = timezone.now() ,
+                            updated_at = timezone.now() 
+                        )
 
-                    return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.id},status=200)
+                        panCard = models.PanCardNos.objects.create(
+                            user_role = user_role,
+                            pan_card_no = panCardNumber ,
+                            created_at = timezone.now()
+                        )
+                        return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.id},status=200)
                 
                 elif user_role.role == 'Company':
                     company_name = data.get('company_name')
@@ -374,33 +393,53 @@ def SubmitProfileAPI(request):
                     company_pan_no = data.get('company_pan_no')
                     public_url_company = data.get('public_url_company')
 
-                    if not all([company_name, addressLine1, addressLine2, city, state ,email,company_pan_no, pin_no, alternate_phone_no, public_url_company]):
+                    if not all([company_name, addressLine1, addressLine2, city, state ,email, pin_no, alternate_phone_no, public_url_company]):
                         return JsonResponse({"message": "All fields are required"}, status=400)
 
                     user_role.user.email = email
                     user_role.save()
 
-                    companyProfile = models.CompanyDetails.objects.create(
-                        user_role = user_role ,
-                        company_name = company_name ,
-                        addressLine1 = addressLine1 ,
-                        addressLin2 = addressLine2,
-                        city = city,
-                        state = state,
-                        pin_no = pin_no ,
-                        alternate_phone_no = alternate_phone_no,
-                        public_url_company = public_url_company ,
-                        created_at = timezone.now() ,
-                        updated_at = timezone.now()
-                    )
+                    try :
+                        companyProfileExistence = models.CompanyDetails.objects.get(user_role=user_role)
+                        # update
+                        companyProfileExistence.company_name = company_name
+                        companyProfileExistence.addressLine1 = addressLine1
+                        companyProfileExistence.addressLine2 = addressLine2
+                        companyProfileExistence.city = city
+                        companyProfileExistence.state  = state
+                        companyProfileExistence.pin_no = pin_no
+                        companyProfileExistence.alternate_phone_no = alternate_phone_no
+                        companyProfileExistence.public_url_company = public_url_company
+                        companyProfileExistence.updated_at = timezone.now()
+                        companyProfileExistence.save()
 
-                    panCard = models.PanCardNos.objects.create(
-                        user_role = user_role,
-                        pan_card_no = company_pan_no ,
-                        created_at = timezone.now()
-                    )
+                        return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfileExistence.id , "user" :user_role.id},status=200)
+                    except models.CompanyDetails.DoesNotExist:
+                        # create
+                        if not all([company_pan_no]):
+                            return JsonResponse({"message": "company_pan_no is required as it is new user"}, status=400)
 
-                    return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.id},status=200)
+                        companyProfile = models.CompanyDetails.objects.create(
+                            user_role = user_role ,
+                            company_name = company_name ,
+                            addressLine1 = addressLine1 ,
+                            addressLin2 = addressLine2,
+                            city = city,
+                            state = state,
+                            pin_no = pin_no ,
+                            alternate_phone_no = alternate_phone_no,
+                            public_url_company = public_url_company ,
+                            created_at = timezone.now() ,
+                            updated_at = timezone.now()
+                        )
+
+                        panCard = models.PanCardNos.objects.create(
+                            user_role = user_role,
+                            pan_card_no = company_pan_no ,
+                            created_at = timezone.now()
+                        )
+
+                        return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.id},status=200)
                 else :
                     return JsonResponse({"message" : "Role is not matched"},status=400)
             except models.UserRole.DoesNotExist:
@@ -649,7 +688,7 @@ def GetDetails(request, user):
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
                 has_posted_for_sale = buyer_units.filter(post_for_saleID__isnull=False).exists()
                 
-                if has_posted_for_sale:
+                if has_posted_for_sale:  #posted
                     first_unit = buyer_units.first()
                     invoice = first_unit.unitID.invoice
                     invoice_data = {
@@ -862,10 +901,9 @@ def ToSellAPI(request):
 
                 try :
                     buyer_Units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer , post_for_saleID = None).order_by('id')[:no_of_units]
-                    # buyer_Units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
                 except models.Buyer_UnitsTracker.DoesNotExist:
-                    return JsonResponse({"message" : "buyer unit does not exits"},status=400)
-                print("buyer_Units.count() ",buyer_Units.count())
+                    return JsonResponse({"message" : "buyer unit does not exits or Not sufficient units for post for sale"},status=400)
+                
                 if buyer_Units.count() < no_of_units:
                     return JsonResponse({"message": "Not enough units available for selling"}, status=400)
             
@@ -874,42 +912,30 @@ def ToSellAPI(request):
                     break
 
                 post_for_sale = models.Post_for_sale.objects.create(
-                    no_of_units=no_of_units,
-                    per_unit_price=per_unit_price,
-                    user_id=user_role,
-                    invoice_id=invoice,
-                    remaining_units=no_of_units,
-                    withdrawn=False,
-                    post_time=timezone.now().time(),
-                    post_date=timezone.now().date(),
-                    from_date=from_date,
-                    to_date=to_date,
-                    post_dateTime=timezone.now()
+                    no_of_units = no_of_units ,
+                    per_unit_price = per_unit_price ,
+                    user_id = user_role ,
+                    invoice_id = invoice ,
+                    remaining_units = no_of_units ,
+                    withdrawn = False ,
+                    post_time = timezone.now().time() ,
+                    post_date = timezone.now().date() ,
+                    from_date = from_date ,
+                    to_date = to_date ,
+                    sold = False ,
+                    post_dateTime = timezone.now() ,
+                    is_admin =  user_role.user.is_admin 
                 )
 
                 for buyer_unit in buyer_Units:
                     buyer_unit.post_for_saleID = post_for_sale
+                    buyer_unit.save()
+
                     models.Post_For_Sale_UnitTracker.objects.create(
                         unitID=buyer_unit.unitID,
                         post_for_saleID=post_for_sale
                     )
-
-                # units_for_selling = models.Buyer_UnitsTracker.objects.filter(
-                #     buyer_id=buyer
-                #     # post_for_saleID = None
-                # ).order_by('id')[:no_of_units]
-
-                # if units_for_selling.count() < no_of_units:
-                #     return JsonResponse({"message": "Not enough units available for selling"}, status=400)
-
-                # for unit in units_for_selling:
-                    # models.Post_For_Sale_UnitTracker.objects.create(
-                    #     unitID=unit.unitID,
-                    #     post_for_saleID=post_for_sale
-                    # )
-                    # unit.post_for_saleID = post_for_sale
-                    # unit.save()
-                return JsonResponse({"message": "Sell transaction recorded successfully", "seller_id": user_role.id}, status=201)
+                return JsonResponse({"message": "Sell transaction recorded successfully", "user": user_role.id}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)

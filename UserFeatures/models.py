@@ -182,7 +182,7 @@ class Post_for_sale(models.Model):
   to_date = models.DateField()
   sold = models.BooleanField(default=False)
   post_dateTime = models.DateTimeField(default=timezone.now())
-  configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE)
+  configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE,null=True, blank=True)
   is_admin =  models.BooleanField()
 
 class Buyers(models.Model):
