@@ -6,8 +6,8 @@ urlpatterns = [
     # path('Register/',views.RegisterAPI),
     path('generateOTP/',views.GenerateOtpAPI),
     path('verifyOtp/',views.VerifyOtpAPI),
-    path('verifyStatus/<int:userID>',views.verifyStatusAPI),
-    path('phoneToPrefill/<int:userID>/',views.phonetoPrefillAPI),
+    path('verifyStatus/<int:user>',views.verifyStatusAPI),
+    path('phoneToPrefill/<int:user>/',views.phonetoPrefillAPI),
     path('submitProfile/',views.SubmitProfileAPI),
     # path('GetUserDetails/<int:user_id>/',views.GetUserDetailsAPI), #details fetach karavis ane user_role store karis
     # path('status/',views.ChanageStatusAPI),

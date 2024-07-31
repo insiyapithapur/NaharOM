@@ -140,10 +140,9 @@ def VerifyOtpAPI(request):
             reference_id = data.get('referenceId')
             otp = data.get('otp')
             extra_fields = data.get('extraFields')
-
             user_role = data.get('user_role')
 
-            if not all([country_code, mobile_number, reference_id, otp, str(extra_fields)]):
+            if not all([country_code, mobile_number, user_role ,reference_id, otp, str(extra_fields)]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
             url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
@@ -165,7 +164,6 @@ def VerifyOtpAPI(request):
 
             if response.status_code == 200:
                 try:
-                    print("in try")
                     user = models.User.objects.get(mobile = mobile_number)
                     userRole = models.UserRole.objects.get(user = user)
                     if userRole.role != user_role:
@@ -176,7 +174,6 @@ def VerifyOtpAPI(request):
                             "user_id": userRole.id 
                         }, status=200)
                 except models.User.DoesNotExist:
-                    print("except")
                     with transaction.atomic():
                         user = models.User.objects.create(
                             mobile=mobile_number,
@@ -189,7 +186,7 @@ def VerifyOtpAPI(request):
                         return JsonResponse({
                             "message": "User registered successfully",
                             "signzy_Response" : response.json(),
-                            "user_id": userRole.id 
+                            "user": userRole.id 
                         }, status=201)
                 except models.UserRole.DoesNotExist:
                     return JsonResponse({"message":"User id exist but not userRole"},status=200)
@@ -203,13 +200,13 @@ def VerifyOtpAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
-def verifyStatusAPI(request,userID):
+def verifyStatusAPI(request,user):
     if request.method == 'GET':
         try:
-            if not userID:
+            if not user:
                 return JsonResponse({"message": "userID should be there in url"}, status=400)
 
-            userRole = models.UserRole.objects.get(id=userID)
+            userRole = models.UserRole.objects.get(id=user)
 
             if userRole.role == 'Individual' :
                 Individual_Detials_exist = models.IndividualDetails.objects.filter(user_role=userRole).exists()
@@ -235,7 +232,7 @@ def verifyStatusAPI(request,userID):
                 else :
                     is_BankDetailsExists = "False"
 
-            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists},status=200)
+            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id },status=200)
         
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
@@ -245,13 +242,13 @@ def verifyStatusAPI(request,userID):
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
 @csrf_exempt
-def phonetoPrefillAPI(request,userID):
+def phonetoPrefillAPI(request,user):
     if request.method == 'GET':
         try:
-            if not all([userID]):
-                return JsonResponse({"message": "All fields are required"}, status=400)
-
-            userRole = models.UserRole.objects.get(id=userID)
+            if not all([user]):
+                return JsonResponse({"message": "user is required"}, status=400)
+      
+            userRole = models.UserRole.objects.get(id=user)
 
             url = 'https://api-preproduction.signzy.app/api/v3/phonekyc/phone-prefill-v2'
             headers = {
@@ -292,7 +289,6 @@ def phonetoPrefillAPI(request,userID):
                 postal_code = response_info['address'][0]['Postal'] if response_info['address'] else None
 
                 prefill_data = {
-                    # "city"
                     "alternatePhone": alternate_phone,
                     "email": email,
                     "address1": address1,
@@ -304,20 +300,20 @@ def phonetoPrefillAPI(request,userID):
                     "postalCode": postal_code
                 }
 
-                return JsonResponse({"prefillData": prefill_data}, status=200)
+                return JsonResponse({"prefillData": prefill_data,"user" : userRole.user.id,}, status=200)
             return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
-        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
 @csrf_exempt
 def SubmitProfileAPI(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        userID = data.get('userID')
+        userID = data.get('user')
 
         if not userID:
             return JsonResponse({"message": "userID should be there"}, status=400)
@@ -335,9 +331,10 @@ def SubmitProfileAPI(request):
                     firstName = data.get('firstName')
                     lastName = data.get('lastName')
                     state = data.get('state')
+                    city = data.get('city')
                     postalCode = data.get('postalCode')
 
-                    if not all([alternatePhone, email, address1, address2, panCardNumber, firstName, lastName, state, postalCode]):
+                    if not all([alternatePhone, email, address1, address2, panCardNumber, firstName, lastName, state,city, postalCode]):
                         return JsonResponse({"message": "All fields are required"}, status=400)
 
                     user_role.user.email = email
@@ -349,7 +346,7 @@ def SubmitProfileAPI(request):
                         last_name = lastName ,
                         addressLine1 = address1 ,
                         addressLine2 = address2 ,
-                        city = state ,
+                        city = city ,
                         state = state,
                         pin_code = postalCode ,
                         alternate_phone_no = alternatePhone ,
@@ -363,7 +360,7 @@ def SubmitProfileAPI(request):
                         created_at = timezone.now()
                     )
 
-                    return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id},status=200)
+                    return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.user.id},status=200)
                 
                 elif user_role.role == 'Company':
                     company_name = data.get('company_name')
@@ -403,7 +400,7 @@ def SubmitProfileAPI(request):
                         created_at = timezone.now()
                     )
 
-                    return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id},status=200)
+                    return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.user.id},status=200)
                 else :
                     return JsonResponse({"message" : "Role is not matched"},status=400)
             except models.UserRole.DoesNotExist:
@@ -416,7 +413,7 @@ def BankAccDetailsAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_role_id = data.get('user_role_id')
+            user_role_id = data.get('user')
 
             if not user_role_id:
                 return JsonResponse({"message": "user_role_id is required"}, status=400)
@@ -445,7 +442,7 @@ def BankAccDetailsAPI(request):
                     account_type=account_type
                 )
 
-                return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id}, status=201)
+                return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id,"user" :user_role.user.id}, status=201)
 
             except KeyError:
                 return JsonResponse({"message": "Missing required fields"}, status=400)
@@ -453,41 +450,41 @@ def BankAccDetailsAPI(request):
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
 
-    elif request.method == 'GET':
-        try:
-            data = json.loads(request.body)
-            user_role_id = data.get('user_role_id')
-            print(user_role_id)
+    # elif request.method == 'GET':
+    #     try:
+    #         data = json.loads(request.body)
+    #         user_role_id = data.get('user_r')
+    #         print(user_role_id)
 
-            if not user_role_id:
-                return JsonResponse({"message": "user_role_id is required"}, status=400)
+    #         if not user_role_id:
+    #             return JsonResponse({"message": "user_role_id is required"}, status=400)
 
-            try:
-                user_role = models.UserRole.objects.get(id=user_role_id)
-                print(user_role)
-            except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+    #         try:
+    #             user_role = models.UserRole.objects.get(id=user_role_id)
+    #             print(user_role)
+    #         except models.UserRole.DoesNotExist:
+    #             return JsonResponse({"message": "User role not found"}, status=404)
 
-            bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-            print(bank_accounts.count())
-            if not bank_accounts.exists():
-                return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
+    #         bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
+    #         print(bank_accounts.count())
+    #         if not bank_accounts.exists():
+    #             return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
 
-            account_numbers = [{"bank_account_id": acc.id, "account number ending with": str(acc.account_number)[-4:]} for acc in bank_accounts]
-            return JsonResponse({"bank_accounts": account_numbers}, status=200)
+    #         account_numbers = [{"bank_account_id": acc.id, "account number ending with": str(acc.account_number)[-4:]} for acc in bank_accounts]
+    #         return JsonResponse({"bank_accounts": account_numbers}, status=200)
 
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
+    #     except Exception as e:
+    #         return JsonResponse({"message": str(e)}, status=500)
 
     else:
-        return JsonResponse({"message": "Only POST and GET methods are allowed"}, status=405)
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
 @csrf_exempt
 def Credit_FundsAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_role_id = data.get('user_role_id')
+            user_role_id = data.get('user')
             bank_acc_id = data.get('bank_acc_id')
             amount = data.get('amount')
 
@@ -533,6 +530,7 @@ def Credit_FundsAPI(request):
 
                 return JsonResponse({
                         "message": "Funds added successfully",
+                        "user" :user_role.user.id,
                         "wallet_balance": wallet.balance,
                         "transaction_id": Balancetransaction.transaction_id
                 }, status=200)
