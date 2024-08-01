@@ -641,7 +641,11 @@ def usersLedgerAPI(request,user):
                 try:
                     bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
                 except models.BankAccountDetails.DoesNotExist:
-                    print("xjnc xj")
+                    all_users_ledger = {
+                        "user": user_role.id,
+                        "bankAcc": None
+                    }
+                    
 
             return JsonResponse({"user_roles": all_users_ledger}, status=200)
             

@@ -322,7 +322,7 @@ def SubmitProfileAPI(request):
         with transaction.atomic():
             try :
                 user_role = models.UserRole.objects.get(id=userID)
-
+                # print(user_role.id)
                 if user_role.role == 'Individual':
                     alternatePhone = data.get('alternatePhone')
                     email= data.get('email')
@@ -343,7 +343,9 @@ def SubmitProfileAPI(request):
 
                     try :
                         # update
+                        # print("jbdcfh ")
                         individualProfileExistence = models.IndividualDetails.objects.get(user_role=user_role)
+                        # print(individualProfileExistence)
                         individualProfileExistence.first_name = firstName
                         individualProfileExistence.last_name = lastName 
                         individualProfileExistence.addressLine1 = address1 
