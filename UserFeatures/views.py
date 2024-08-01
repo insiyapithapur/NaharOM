@@ -232,7 +232,7 @@ def verifyStatusAPI(request,user):
                 else :
                     is_BankDetailsExists = False
 
-            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id  , 'user_role' : userRole.role , 'phone' : userRole.user.mobile},status=200)
+            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id  , 'user_role' : userRole.role , 'phone' : userRole.user.mobile ,"is_admin" : str(userRole.user.is_admin) , "is_superAdmin" : str(userRole.user.is_superadmin) },status=200)
         
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
