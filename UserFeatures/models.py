@@ -95,7 +95,8 @@ class BankAccountDetails(models.Model):
     created_at = models.DateTimeField(default=timezone.now())
 
 class Wallet(models.Model):
-    user_role = models.OneToOneField(UserRole, on_delete=models.CASCADE)
+    user_role = models.OneToOneField(UserRole, on_delete=models.CASCADE,unique=True)
+    primary_bankID = models.OneToOneField(BankAccountDetails,on_delete=models.CASCADE,unique=True)
     OutstandingBalance = models.FloatField()
     updated_at = models.DateTimeField() 
 
@@ -173,6 +174,7 @@ class Post_for_sale(models.Model):
   user_id = models.ForeignKey(UserRole,on_delete=models.CASCADE)
   invoice_id = models.ForeignKey(Invoices,on_delete=models.CASCADE)
   remaining_units = models.IntegerField()
+  total_price = models.FloatField()
   withdrawn = models.BooleanField(default=False)
   post_time = models.TimeField(default=timezone.now())
   post_date = models.DateField(default=timezone.now())
