@@ -301,7 +301,8 @@ def phonetoPrefillAPI(request,user):
                 }
 
                 return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
-            return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
+            # return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
+            return JsonResponse({"prefillData": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
         except Exception as e:
