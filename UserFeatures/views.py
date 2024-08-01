@@ -594,7 +594,7 @@ def Credit_FundsAPI(request):
                         status='response',
                         source='bank_to_wallet',
                         purpose='Funds added to wallet',
-                        bank_acc=wallet.primary_bankID,
+                        from_bank_acc=wallet.primary_bankID,
                         invoice=None,
                         time_date=timezone.now()
                     )
@@ -788,7 +788,6 @@ def GetSellPurchaseDetailsAPI(request, user):
     else:
         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
-# wallettransaction --> from wallet , to wallet
 @csrf_exempt
 def TobuyAPI(request):
     if request.method == 'POST':
@@ -884,7 +883,8 @@ def TobuyAPI(request):
                     debitedAmount = total_price ,
                     status = 'response' ,
                     source = 'wallet_to_buy',
-                    bank_acc = buyer_wallet.primary_bankID,
+                    from_bank_acc = buyer_wallet.primary_bankID,
+                    to_bank_acc = seller_wallet.primary_bankID,
                     invoice = postForSale.invoice_id ,
                     time_date = timezone.now()
                 )
@@ -896,7 +896,8 @@ def TobuyAPI(request):
                     creditedAmount = total_price ,
                     status = 'response' ,
                     source = 'sell_to_wallet',
-                    bank_acc = seller_wallet.primary_bankID ,
+                    from_bank_acc = seller_wallet.primary_bankID ,
+                    to_bank_acc = buyer_wallet.primary_bankID,
                     invoice = postForSale.invoice_id,
                     time_date = timezone.now()
                 )

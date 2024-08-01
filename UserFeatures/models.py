@@ -226,6 +226,7 @@ class WalletTransaction(models.Model):
     status = models.CharField(max_length=50, choices=[('initiated', 'Initiated'), ('processing', 'Processing'), ('response', 'Response')])
     source = models.CharField(max_length=50, choices=[('bank_to_wallet', 'Bank to Wallet'), ('wallet_to_bank', 'Wallet to Bank'), ('wallet_to_buy', 'Wallet to Buy'), ('sell_to_wallet', 'Sell to Wallet')])
     purpose = models.CharField(max_length=255 , null=True)
-    bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True)
+    from_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='from_bank_transactions')
+    to_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='to_bank_transactions')
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE , null=True)
     time_date = models.DateTimeField()
