@@ -640,7 +640,8 @@ def LedgerAPI(request, user):
                     "status": transaction.status,
                     "source": transaction.source,
                     "purpose": transaction.purpose,
-                    "bank_acc": transaction.bank_acc.account_number if transaction.bank_acc else None,
+                    "from_bank_acc": transaction.from_bank_acc.account_number if transaction.from_bank_acc else None,
+                    "to_bank_acc" :transaction.to_bank_acc.account_number if transaction.to_bank_acc else None,
                     "invoice": transaction.invoice.product_name if transaction.invoice else None,
                     "time_date": transaction.time_date,
                 })
