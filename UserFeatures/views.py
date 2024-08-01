@@ -10,90 +10,6 @@ from django.utils.dateparse import parse_time
 import requests
 from django.db.models import Q
 
-# @csrf_exempt
-# def RegisterAPI(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             mobile = data.get('mobile')
-#             role = data.get('role')
-
-#             if not mobile or not role:
-#                 return JsonResponse({"message": "Mobile and role are required"}, status=400)
-
-#             try:
-#                 user = models.User.objects.get(mobile = mobile)
-#                 user_role = models.UserRole.objects.get(user = user , role = role)
-#                 return JsonResponse({"message": "User already exist"}, status=400)
-#             except models.UserRole.DoesNotExist:
-#                 #  api integrate , mobile --> email
-#                 user = models.User.objects.create(
-#                     mobile=mobile,
-#                     email="default8141@gmail.com"
-#                 )
-#                 user_role = models.UserRole.objects.create(
-#                     user=user,
-#                     role=role
-#                 )
-
-#                 return JsonResponse({
-#                     "message": "User registered successfully",
-#                     "user_role_id": user_role.id
-#                 }, status=201)
-            
-#             # existing_roles = models.UserRole.objects.filter(user=user).values_list('role', flat=True)
-#             # if role in existing_roles:
-#             #     return JsonResponse({"message": f"User already registered with role '{role}'"}, status=400)
-            
-#             # if 'company' in existing_roles and 'individual' in existing_roles:
-#             #     return JsonResponse({"message": "Already created both roles for this email"}, status=400)
-
-#             # user_role = models.UserRole.objects.create(
-#             #     user=user,
-#             #     role=role
-#             # )
-#             # return JsonResponse({"message": "Role added to existing user", "user_role_id": user_role.id}, status=201)
-
-#         except json.JSONDecodeError:
-#             return JsonResponse({"message": "Invalid JSON"}, status=400)
-#         except Exception as e:
-#             return JsonResponse({"message": str(e)}, status=500)
-#     else:
-#         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-    
-# @csrf_exempt
-# def LoginAPI(request):
-#     if request.method == 'POST':
-#         try:
-#             data = json.loads(request.body)
-#             mobile = data.get('mobile')
-#             role = data.get('role')
-
-#             if not mobile or not role:
-#                 return JsonResponse({"message": "Email, password, and role are required"}, status=400)
-
-#             try:
-#                 user = models.User.objects.get(mobile=mobile)
-#                 print(user)
-#                 if user:
-#                     try:
-#                         user_role = models.UserRole.objects.get(user=user, role=role)
-#                         return JsonResponse({"message": "Login successful", "user_role_id": user_role.id}, status=200)
-#                     except models.UserRole.DoesNotExist:
-#                         return JsonResponse({"message": "Role mismatch for the given email"}, status=400)
-#                 else:
-#                     return JsonResponse({"message": "Invalid email or password"}, status=401)
-#             except models.User.DoesNotExist:
-#                 return JsonResponse({"message": "Email doesn't exist"}, status=401)
-#         except json.JSONDecodeError:
-#             return JsonResponse({"message": "Invalid JSON"}, status=400)
-#     else:
-#         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-
-# @csrf_exempt
-# def ChangeStatusAPI(request):
-#     if request.method == 'GET':
-
 @csrf_exempt
 def GenerateOtpAPI(request):
     if request.method == 'POST':
@@ -342,6 +258,7 @@ def ProfileAPI(request,user=None):
         with transaction.atomic():
             try :
                 user_role = models.UserRole.objects.get(id=userID)
+                user = user_role.user
                 # print(user_role.id)
                 if user_role.role == 'Individual':
                     alternatePhone = data.get('alternatePhone')
@@ -359,8 +276,8 @@ def ProfileAPI(request,user=None):
                         return JsonResponse({"message": "All fields are required"}, status=400)
                     
                     print("email",email)
-                    user_role.user.email = email
-                    user_role.save()
+                    user.email = email
+                    user.save()
                     print("userRole.user.email" ,user_role.user.email)
 
                     try :
@@ -438,8 +355,8 @@ def ProfileAPI(request,user=None):
                     if not all([company_name, addressLine1, addressLine2, city, state ,email, pin_no, alternate_phone_no, public_url_company]):
                         return JsonResponse({"message": "All fields are required"}, status=400)
 
-                    user_role.user.email = email
-                    user_role.save()
+                    user.email = email
+                    user.save()
 
                     try :
                         companyProfileExistence = models.CompanyDetails.objects.get(user_role=user_role)
@@ -457,7 +374,7 @@ def ProfileAPI(request,user=None):
 
                         try :
                             pancards = models.PanCardNos.objects.get(user_role=user_role)
-                            pancards.pan_card_no = panCardNumber
+                            pancards.pan_card_no = company_pan_no
                             pancards.save()
                         except :
                             return JsonResponse({"message":"pan card entery is not there but company details is there"},status=400)
@@ -491,7 +408,7 @@ def ProfileAPI(request,user=None):
                             except :
                                 panCard = models.PanCardNos.objects.create(
                                     user_role = user_role,
-                                    pan_card_no = panCardNumber ,
+                                    pan_card_no = company_pan_no ,
                                     created_at = timezone.now()
                                 )
 
@@ -677,7 +594,7 @@ def Credit_FundsAPI(request):
                         status='response',
                         source='bank_to_wallet',
                         purpose='Funds added to wallet',
-                        bank_acc=wallet.primary_bankID.account_number,
+                        bank_acc=wallet.primary_bankID,
                         invoice=None,
                         time_date=timezone.now()
                     )
@@ -706,10 +623,6 @@ def LedgerAPI(request, user):
                 user_role = models.UserRole.objects.get(id=user)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
-
-            # bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-            # if not bank_accounts.exists():
-            #     return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
 
             wallet = models.Wallet.objects.filter(user_role=user_role)
             if not wallet.exists():
@@ -755,6 +668,7 @@ def ShowFundsAPI(request,user_role_id):
     else:
         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
+# buyer --> buyer_unit tracker brought and postedforsell
 @csrf_exempt
 def GetSellPurchaseDetailsAPI(request, user):
     if request.method == 'GET':
@@ -798,74 +712,6 @@ def GetSellPurchaseDetailsAPI(request, user):
                         }
                         invoice_data_list.append(invoice_data)
 
-            # buyers = models.Buyers.objects.filter(user_id=userRole)
-            # for buyer in buyers:
-            #     buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
-            #     # has_posted_for_sale = buyer_units.filter(post_for_saleID__isnull=False).exists()
-
-            #     # 1 -> yes flag = 1   flag = 1                         flag = 2
-            #     # 2 -> yes flag = 1   flag = 1                         means this is posted for sale
-            #     # 3 -> yes flag = 1   flag = 2
-            #     # 4 -> yes flag = 2   means this is posted for sale
-            #     #  means this is posted for sale
-
-            #     # flag == 2 -> buyer posted for sale
-            #     # flag == 1 -> buyer not posted for sale
-                
-            #     for buyer_unit in buyer_units:
-            #         if buyer_unit.post_for_saleID == None:
-            #             flag =1
-            #         else :
-            #             flag = 2
-            #             break
-            #     if flag == 2:  #posted
-            #         # first_unit = buyer_units.first()
-            #         # invoice = first_unit.unitID.invoice
-            #         invoice_data = {
-            #             'id': invoice.id,
-            #             'Invoice_id': invoice.invoice_id,
-            #             'Invoice_primary_id': invoice.primary_invoice_id,
-            #             'Buyer_id': buyer.id,
-            #             'Posted_no_of_units': buyer.no_of_units,
-            #             'Posted_per_unit_price': buyer.per_unit_price_invested,
-            #             'Invoice_name': invoice.product_name,
-            #             'Buyer_Purchased_date': buyer.purchase_date,
-            #             'Buyer_Purchased_time': buyer.purchase_time,
-            #             'Invoice_interest': invoice.interest,
-            #             'Invoice_xirr': invoice.xirr,
-            #             'Invoice_irr': invoice.irr,
-            #             'Invoice_tenure_in_days': invoice.tenure_in_days,
-            #             'Invoice_expiration_time': invoice.expiration_time,
-            #             'isAdmin': buyer.user_id.user.is_admin,
-            #             'Buyer_user_id' : buyer.user_id.user.id ,
-            #             'type': 'PostedForSale'
-            #         }
-            #         invoice_data_list.append(invoice_data)
-
-            #     if flag == 1:  #not posted
-            #         # first_unit = buyer_units.first()
-            #         # invoice = first_unit.unitID.invoice
-            #         invoice_data = {
-            #             'id': invoice.id,
-            #             'Invoice_id': invoice.invoice_id,
-            #             'Invoice_primary_id': invoice.primary_invoice_id,
-            #             'Buyer_id': buyer.id,
-            #             'Invoice_no_of_units': buyer.no_of_units,
-            #             'Invoice_remaining_units': buyer.no_of_units,
-            #             'Invoice_per_unit_price': buyer.per_unit_price_invested,
-            #             'Invoice_name': invoice.product_name,
-            #             'Invoice_post_date': buyer.purchase_date,
-            #             'Invoice_post_time': buyer.purchase_time,
-            #             'Invoice_interest': invoice.interest,
-            #             'Invoice_xirr': invoice.xirr,
-            #             'Invoice_irr': invoice.irr,
-            #             'Invoice_tenure_in_days': invoice.tenure_in_days,
-            #             'Invoice_expiration_time': invoice.expiration_time,
-            #             'isAdmin': buyer.user_id.user.is_admin,
-            #             'Buyer_user_id' : buyer.user_id.user.id ,
-            #             'type': 'Brought'
-            #         }
-            #         invoice_data_list.append(invoice_data)
             buyers = models.Buyers.objects.filter(user_id=userRole)
             for buyer in buyers:
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
@@ -942,6 +788,7 @@ def GetSellPurchaseDetailsAPI(request, user):
     else:
         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
+# wallettransaction --> from wallet , to wallet
 @csrf_exempt
 def TobuyAPI(request):
     if request.method == 'POST':
@@ -957,9 +804,10 @@ def TobuyAPI(request):
                 return JsonResponse({"message": "User not found"}, status=404)
 
             try:
-                bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
-                buyer_wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
-            except models.OutstandingBalance.DoesNotExist:
+                # bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
+                buyer_wallet = models.Wallet.objects.get(user_role=user_role)
+                print("buyer_wallet ,",buyer_wallet.primary_bankID)
+            except models.Wallet.DoesNotExist:
                 return JsonResponse({"message": "Buyer Wallet not found"}, status=404)
             
             try:
@@ -972,7 +820,7 @@ def TobuyAPI(request):
             
             total_price = postForSale.per_unit_price * no_of_units
 
-            if buyer_wallet.balance < total_price:
+            if buyer_wallet.OutstandingBalance < total_price:
                 return JsonResponse({"message": "Insufficient balance in buyer's wallet"}, status=400)
             
             with transaction.atomic():
@@ -1021,34 +869,34 @@ def TobuyAPI(request):
                     unit.unitID.current_owner = user_role
                     unit.unitID.save()
                 
-                buyer_wallet.balance -= total_price
+                buyer_wallet.OutstandingBalance -= total_price
                 buyer_wallet.save()
 
-                seller_bankAcc = models.BankAccountDetails.objects.get(user_role=postForSale.user_id)
-                seller_wallet = models.OutstandingBalance.objects.get(bank_acc=seller_bankAcc)
+                seller_wallet = models.Wallet.objects.get(user_role=postForSale.user_id)
+                print("seller_wallet ,",seller_wallet.primary_bankID)
                 
-                seller_wallet.balance += total_price
+                seller_wallet.OutstandingBalance += total_price
                 seller_wallet.save()
 
-                models.OutstandingBalanceTransaction.objects.create(
+                models.WalletTransaction.objects.create(
                     wallet = buyer_wallet ,
                     type = "buy" ,
                     debitedAmount = total_price ,
                     status = 'response' ,
                     source = 'wallet_to_buy',
-                    bank_acc = seller_wallet.bank_acc,
+                    bank_acc = buyer_wallet.primary_bankID,
                     invoice = postForSale.invoice_id ,
                     time_date = timezone.now()
                 )
 
                 # seller
-                models.OutstandingBalanceTransaction.objects.create(
+                models.WalletTransaction.objects.create(
                     wallet = seller_wallet ,
                     type = "sell" ,
                     creditedAmount = total_price ,
                     status = 'response' ,
                     source = 'sell_to_wallet',
-                    bank_acc = buyer_wallet.bank_acc ,
+                    bank_acc = seller_wallet.primary_bankID ,
                     invoice = postForSale.invoice_id,
                     time_date = timezone.now()
                 )
@@ -1077,6 +925,7 @@ def ToSellAPI(request):
             buyerID = data.get('buyerID')
             no_of_units = data.get('no_of_units')
             per_unit_price = data.get('per_unit_price')
+            total_price = data.get('total_price')
             from_date = data.get('from_date')
             to_date = data.get('to_date')
 
@@ -1110,6 +959,7 @@ def ToSellAPI(request):
                 post_for_sale = models.Post_for_sale.objects.create(
                     no_of_units = no_of_units ,
                     per_unit_price = per_unit_price ,
+                    total_price = total_price,
                     user_id = user_role ,
                     invoice_id = invoice ,
                     remaining_units = no_of_units ,

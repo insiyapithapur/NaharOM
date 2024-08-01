@@ -15,36 +15,6 @@ import hashlib
 from django.db.models import Q
 
 @csrf_exempt
-def LoginAPI(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            mobile = data.get('mobile')
-            password = data.get('password') 
-
-            if not mobile or not password:
-                return JsonResponse({"message": "mobile and password are required"}, status=400)
-
-            try:
-                user = models.User.objects.get(mobile=mobile)
-                if user.check_password(password):
-                    if user.is_superadmin:
-                        return JsonResponse({"message": "Admin logged in successfully", "id": user.id}, status=200)
-                    else:
-                        return JsonResponse({"message": "User is not an admin"}, status=403)
-                else:
-                    return JsonResponse({"message": "Invalid credentials"}, status=401)
-            except models.User.DoesNotExist:
-                return JsonResponse({"message": "Invalid credentials"}, status=401)
-
-        except json.JSONDecodeError:
-            return JsonResponse({"message": "Invalid JSON"}, status=400)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-    
-@csrf_exempt
 def ExtractInvoicesAPI(request):
     if request.method == 'POST':
         try:
@@ -192,107 +162,18 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
     else:
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
-# @csrf_exempt
-# def configureAPI(request):
-#     if request.method == 'POST':
-#         try :
-#             data = json.loads(request.body)
-#             user_id = data.get('user_id')
-#             primary_invoice_id = data.get('primary_invoice_id')
-#             no_of_units = data.get('no_of_units')
-#             configureID = data.get('configureID')
-
-#             try:
-#                 user = models.UserRole.objects.get(id=user_id)
-#             except models.UserRole.DoesNotExist:
-#                 return JsonResponse({"message": "User not found"}, status=404)
-            
-#             if not user.user.is_admin:
-#                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
-            
-#             if not user.user.is_superadmin:
-#                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
-
-#             try:
-#                 configure = models.Configurations.objects.get(id=configureID)
-
-#                 previous_remainingUnits = configure.remaining_units
-#                 previous_noOfUnits = configure.no_of_units
-#                 if previous_noOfUnits == previous_remainingUnits:
-#                     new_remainingUnits = no_of_units
-#                     configure.no_of_units = new_remainingUnits
-#                     configure.remaining_units = new_remainingUnits
-#                     configure.save()
-#                     return JsonResponse({"message": "Successfully updated configuration", "configureID": configure.id}, status=200)
-#                 else :
-#                     new_remainingUnits = no_of_units
-#                     new_NoOfUnits = (previous_noOfUnits - previous_remainingUnits) + no_of_units
-#                     configure.no_of_units = new_NoOfUnits
-#                     configure.remaining_units = new_remainingUnits
-#                     configure.save()
-#                     return JsonResponse({"message": "Successfully updated configuration", "configureID": configure.id}, status=200)
-            
-#             except models.Configurations.DoesNotExist:
-#                 invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
-#                 if not invoice_data or not invoice_data.get('product'):
-#                     return JsonResponse({"message": "Invoice data not found or product is null"}, status=404)
-
-#                 product_data = invoice_data['product']
-#                 product_name = product_data['name']
-#                 interest = product_data['interest']
-#                 xirr = product_data['xirr_in_percentage']
-#                 irr = product_data['interest_rate_fixed']
-#                 tenure_in_days = product_data['tenure_in_days']
-#                 # principle_amt = product_data['principle_amt']
-#                 expiration_time = timezone.now() + timezone.timedelta(days=tenure_in_days)
-
-#                 with transaction.atomic() :
-#                     try :
-#                         configuration_exist = models.Configurations(primary_invoice_id=primary_invoice_id)
-#                         return JsonResponse({"message" : "already configured"},status=400)
-#                     except models.Configurations.DoesNotExist :
-#                         invoice = models.Invoices.objects.create(
-#                             primary_invoice_id=primary_invoice_id,
-#                             product_name = product_name,
-#                             interest = interest ,
-#                             xirr = xirr ,
-#                             irr = irr,
-#                             tenure_in_days = tenure_in_days ,
-#                             expiration_time = expiration_time ,
-#                             sold = False ,
-#                             expired = False ,
-#                             created_At = timezone.now()
-#                         )
-
-#                         if not invoice_data or not invoice_data.get('product'):
-#                             return JsonResponse({"message": "Invoice data not found or product is null"}, status=404)
-#                         create_configure = models.Configurations.objects.create(
-#                             no_of_units = no_of_units ,
-#                             primary_invoice_id = primary_invoice_id ,
-#                             user_id = user , 
-#                             remaining_units = no_of_units
-#                         )
-#                         return JsonResponse({"message" : "Successfully configured","configureID" : create_configure.id ,"invoice_id" : invoice.id},status=400)
-            
-#         except json.JSONDecodeError:
-#             return JsonResponse({"message": "Invalid JSON"}, status=400)
-#         except Exception as e:
-#             return JsonResponse({"message": str(e)}, status=500)
-#     else:
-#         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
-    
 @csrf_exempt
 def PostInvoiceAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             primary_invoice_id = data.get('primary_invoice_id')
-            user_id = data.get('user_id')
+            user_id = data.get('user')
             no_of_units = data.get('no_of_units')
             per_unit_price = data.get('per_unit_price')
             from_date = data.get('from_date')
             to_date = data.get('to_date')
-            total_price = ( no_of_units * per_unit_price )
+            total_price = data.get('total_price')
 
             try:
                 user_role = models.UserRole.objects.get(id=user_id)
@@ -300,6 +181,9 @@ def PostInvoiceAPI(request):
                 return JsonResponse({"message":"user_id does not exist"},status=400)
             
             if not user_role.user.is_admin:
+                return JsonResponse({"message":"For this operation you have to be admin"},status=400)
+            
+            if not user_role.user.is_superadmin:
                 return JsonResponse({"message":"For this operation you have to be admin"},status=400)
         
             try:
@@ -328,6 +212,7 @@ def PostInvoiceAPI(request):
                             per_unit_price = per_unit_price ,
                             user_id = user_role ,
                             invoice_id = invoice ,
+                            total_price = total_price,
                             remaining_units = no_of_units ,
                             withdrawn = False ,
                             post_time = timezone.now().time() ,
@@ -393,7 +278,7 @@ def PostInvoiceAPI(request):
                         user_id = user_role ,
                         remaining_price = principal_price ,
                     )
-                    print(configure.id)
+                    print("configure.id ",configure.id)
 
                     fractional_units = []
                     for _ in range(no_of_units):
@@ -405,11 +290,12 @@ def PostInvoiceAPI(request):
                         )
                         fractional_unit.save()
                         fractional_units.append(fractional_unit)
-                    print(fractional_units)
+                    # print(fractional_units.count())
 
                     post_for_sale = models.Post_for_sale.objects.create(
                             no_of_units = no_of_units ,
                             per_unit_price = per_unit_price ,
+                            total_price = total_price,
                             user_id = user_role ,
                             invoice_id = invoice ,
                             remaining_units = no_of_units ,
