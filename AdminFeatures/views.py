@@ -534,62 +534,84 @@ def SalesPurchasedReportAPI(request,User_id):
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
     
 @csrf_exempt
-def UserManagementAPI(request):
+def UserManagementAPI(request,user):
     if request.method == 'GET':
         try:
-            users = models.User.objects.all()
+            user_is_admin = models.UserRole.objects.get(id=user)
+
+            if not user_is_admin.user.is_admin:
+                return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
+            
+            if not user_is_admin.user.is_superadmin:
+                return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
+            
+            # users = models.User.objects.all()
+            user_roles = models.UserRole.objects.all()
+            print(user_roles.count())
             all_user_details = []
 
-            for user in users:
-                print(user.mobile)
+            for user_role in user_roles:
+                print(user_role.user.mobile)
                 try:
-                    user_role = models.UserRole.objects.get(user=user)
-                    print(user.id)
+                    # user_role = models.UserRole.objects.get(user=user)
+                    print(user_role.id)
                     user_details = {
-                        "user_id": user.id,
+                        "user": user_role.id,
                         "user_role": user_role.role,
-                        "email": user.email,
-                        "date_of_joining": user.created_at,
+                        "email": user_role.user.email,
+                        "mobile" : user_role.user.mobile ,
+                        "date_of_joining": user_role.user.created_at,
                     }
 
                     if user_role.role == 'Company':
-                        # company_details = models.CompanyDetails.objects.get(user_role=user_role)
-                        user_details.update({
-                            # "company_name": company_details.company_name,
-                            "company_name": "ABC",
-                        })
+                        try : 
+                            company_details = models.CompanyDetails.objects.get(user_role=user_role)
+                            user_details.update({
+                                "company_name": company_details.company_name,
+                                # "company_name": "ABC",
+                            })
+                        except models.CompanyDetails.DoesNotExist:
+                            user_details.update({
+                                "company_name": None,
+                                # "company_name": "ABC",
+                            })
                     elif user_role.role == 'Individual':
-                        # individual_details = models.IndividualDetails.objects.get(user_role=user_role)
-                        user_details.update({
-                            # "first_name": individual_details.first_name,
-                            # "last_name": individual_details.last_name,
-                            "first_name": "First name",
-                            "last_name": "last name",
-                        })
-                        
+                        try :
+                            individual_details = models.IndividualDetails.objects.get(user_role=user_role)
+                            user_details.update({
+                                "first_name": individual_details.first_name,
+                                "last_name": individual_details.last_name,
+                                # "first_name": "First name",
+                                # "last_name": "last name",
+                            })
+                        except models.IndividualDetails.DoesNotExist:
+                            user_details.update({
+                                "first_name": None,
+                                "last_name": None,
+                                # "first_name": "First name",
+                                # "last_name": "last name",
+                            })
                     try:
-                        # pan_card = models.PanCardNos.objects.get(user_role=user_role)
-                        user_details["pan_card_no"] = "dekkf cvk f"
+                        pan_card = models.PanCardNos.objects.get(user_role=user_role)
+                        user_details["pan_card_no"] = pan_card.pan_card_no
                     except models.PanCardNos.DoesNotExist:
-                        user_details["pan_card_no"] = "43245mdmd"
+                        user_details["pan_card_no"] = None
 
                     # permissions = {s
                     #     "is_admin": user.is_admin,
                     #     "is_staff": user.is_staff,
                     #     "is_active": user.is_active
                     # }
-                    user_details["is_admin"] = user.is_admin
+                    user_details["is_admin"] = user_role.user.is_admin
+                    user_details["is_superadmin"] = user_role.user.is_superadmin
 
                     all_user_details.append(user_details)
 
                 except models.UserRole.DoesNotExist:
-                    continue  
-                except models.CompanyDetails.DoesNotExist:
-                    continue  
-                except models.IndividualDetails.DoesNotExist:
-                    continue  
-
-            return JsonResponse(all_user_details, safe=False, status=200)
+                    return JsonResponse({"message" : "UserRole does not exist"},status=400)
+                except Exception as e :
+                    return JsonResponse({"message":str(e)},status=500)
+            return JsonResponse(all_user_details, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
