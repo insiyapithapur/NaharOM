@@ -356,33 +356,50 @@ def SubmitProfileAPI(request,user=None):
                         individualProfileExistence.alternate_phone_no = alternatePhone 
                         individualProfileExistence.updated_at = timezone.now()
                         individualProfileExistence.save() 
+                        
+                        try :
+                            pancards = models.PanCardNos.objects.get(user_role=user_role)
+                            pancards.pan_card_no = panCardNumber
+                            pancards.save()
+                        except :
+                            return JsonResponse({"message":"pan card entery is not there but Individual details is there"},status=400)
 
                         return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfileExistence.id , "user" :user_role.id},status=200)
-                    
-                    except models.IndividualDetails.DoesNotExist :
-                        if not all([panCardNumber]):
-                            return JsonResponse({"message": "panCardNumber is required as it is new user"}, status=400)
-                        # create
-                        individualProfile = models.IndividualDetails.objects.create(
-                            user_role = user_role ,
-                            first_name = firstName,
-                            last_name = lastName ,
-                            addressLine1 = address1 ,
-                            addressLine2 = address2 ,
-                            city = city ,
-                            state = state,
-                            pin_code = postalCode ,
-                            alternate_phone_no = alternatePhone ,
-                            created_at = timezone.now() ,
-                            updated_at = timezone.now() 
-                        )
 
-                        panCard = models.PanCardNos.objects.create(
-                            user_role = user_role,
-                            pan_card_no = panCardNumber ,
-                            created_at = timezone.now()
-                        )
-                        return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.id},status=200)
+                                #   models.IndividualDetails.DoesNotExist and models.PanCardNos.DoesNotExist == True then only create thase
+                    except models.IndividualDetails.DoesNotExist :
+                        try:
+                            models.PanCardNos.objects.get(user_role=user_role)
+                            return JsonResponse({"message": "PAN card already exists but individual profile does not"}, status=400)
+                        except models.PanCardNos.DoesNotExist:
+                            if not panCardNumber:
+                                return JsonResponse({"message": "panCardNumber is required as it is new user"}, status=400)
+                        
+                            # create
+                            individualProfile = models.IndividualDetails.objects.create(
+                                user_role = user_role ,
+                                first_name = firstName,
+                                last_name = lastName ,
+                                addressLine1 = address1 ,
+                                addressLine2 = address2 ,
+                                city = city ,
+                                state = state,
+                                pin_code = postalCode ,
+                                alternate_phone_no = alternatePhone ,
+                                created_at = timezone.now() ,
+                                updated_at = timezone.now() 
+                            )
+
+                            try :
+                                pancards = models.PanCardNos.objects.get(user_role=user_role)
+                                return JsonResponse({"message":"pan card entery is there"},status=400)
+                            except :
+                                panCard = models.PanCardNos.objects.create(
+                                    user_role = user_role,
+                                    pan_card_no = panCardNumber ,
+                                    created_at = timezone.now()
+                                )
+                            return JsonResponse({"message" : "Successfully entered individual profile","indiviual_profileID":individualProfile.id , "panCard_NumberID":panCard.id , "user" :user_role.id},status=200)
                 
                 elif user_role.role == 'Company':
                     company_name = data.get('company_name')
@@ -416,33 +433,47 @@ def SubmitProfileAPI(request,user=None):
                         companyProfileExistence.updated_at = timezone.now()
                         companyProfileExistence.save()
 
+                        try :
+                            pancards = models.PanCardNos.objects.get(user_role=user_role)
+                            pancards.pan_card_no = panCardNumber
+                            pancards.save()
+                        except :
+                            return JsonResponse({"message":"pan card entery is not there but company details is there"},status=400)
+                        
                         return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfileExistence.id , "user" :user_role.id},status=200)
                     except models.CompanyDetails.DoesNotExist:
-                        # create
-                        if not all([company_pan_no]):
-                            return JsonResponse({"message": "company_pan_no is required as it is new user"}, status=400)
+                        try:
+                            models.PanCardNos.objects.get(user_role=user_role)
+                            return JsonResponse({"message": "PAN card already exists but company profile does not"}, status=400)
+                        except models.PanCardNos.DoesNotExist:
+                            if not panCardNumber:
+                                return JsonResponse({"message": "panCardNumber is required as it is new user"}, status=400)
+                            # create
+                            companyProfile = models.CompanyDetails.objects.create(
+                                user_role = user_role ,
+                                company_name = company_name ,
+                                addressLine1 = addressLine1 ,
+                                addressLin2 = addressLine2,
+                                city = city,
+                                state = state,
+                                pin_no = pin_no ,
+                                alternate_phone_no = alternate_phone_no,
+                                public_url_company = public_url_company ,
+                                created_at = timezone.now() ,
+                                updated_at = timezone.now()
+                            )
 
-                        companyProfile = models.CompanyDetails.objects.create(
-                            user_role = user_role ,
-                            company_name = company_name ,
-                            addressLine1 = addressLine1 ,
-                            addressLin2 = addressLine2,
-                            city = city,
-                            state = state,
-                            pin_no = pin_no ,
-                            alternate_phone_no = alternate_phone_no,
-                            public_url_company = public_url_company ,
-                            created_at = timezone.now() ,
-                            updated_at = timezone.now()
-                        )
+                            try :
+                                pancards = models.PanCardNos.objects.get(user_role=user_role)
+                                return JsonResponse({"message":"pan card entery is there"},status=400)
+                            except :
+                                panCard = models.PanCardNos.objects.create(
+                                    user_role = user_role,
+                                    pan_card_no = panCardNumber ,
+                                    created_at = timezone.now()
+                                )
 
-                        panCard = models.PanCardNos.objects.create(
-                            user_role = user_role,
-                            pan_card_no = company_pan_no ,
-                            created_at = timezone.now()
-                        )
-
-                        return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.id},status=200)
+                            return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.id},status=200)
                 else :
                     return JsonResponse({"message" : "Role is not matched"},status=400)
             except models.UserRole.DoesNotExist:

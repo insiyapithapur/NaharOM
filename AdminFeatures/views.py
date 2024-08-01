@@ -19,7 +19,7 @@ def LoginAPI(request):
         try:
             data = json.loads(request.body)
             mobile = data.get('mobile')
-            password = data.get('password')
+            password = data.get('password') 
 
             if not mobile or not password:
                 return JsonResponse({"message": "mobile and password are required"}, status=400)
