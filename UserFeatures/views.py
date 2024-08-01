@@ -145,53 +145,73 @@ def VerifyOtpAPI(request):
             if not all([country_code, mobile_number, user_role ,reference_id, otp, str(extra_fields)]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
-            url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
-            headers = {
-                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-                'Content-Type': 'application/json'
-            }
+            # url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
+            # headers = {
+            #     'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+            #     'Content-Type': 'application/json'
+            # }
 
-            payload = {
-                "countryCode": country_code,
-                "mobileNumber": mobile_number,
-                "referenceId": reference_id,
-                "otp": otp,
-                "extraFields": extra_fields
-            }
+            # payload = {
+            #     "countryCode": country_code,
+            #     "mobileNumber": mobile_number,
+            #     "referenceId": reference_id,
+            #     "otp": otp,
+            #     "extraFields": extra_fields
+            # }
 
-            response = requests.post(url, headers=headers, json=payload)
-            print("response")
-
-            if response.status_code == 200:
-                try:
-                    user = models.User.objects.get(mobile = mobile_number)
-                    userRole = models.UserRole.objects.get(user = user)
-                    if userRole.role != user_role:
-                        return JsonResponse({"message":"user role is not match"},status=400)
-                    return JsonResponse({
-                            "message": "User already registered",
-                            "signzy_Response" : response.json(),
-                            "user_id": userRole.id 
-                        }, status=200)
-                except models.User.DoesNotExist:
-                    with transaction.atomic():
-                        user = models.User.objects.create(
-                            mobile=mobile_number,
-                            email="default@gmail.com"
-                        )
-                        userRole = models.UserRole.objects.create(
-                            user = user,
-                            role = user_role,
-                        )
+            # response = requests.post(url, headers=headers, json=payload)
+            status_code = 200
+            with transaction.atomic():
+            # if response.status_code == 200:
+                if status_code == 200:
+                    try:
+                        user = models.User.objects.get(mobile = mobile_number)
+                        userRole = models.UserRole.objects.get(user = user)
+                        if userRole.role != user_role:
+                            return JsonResponse({"message":"user role is not match"},status=400)
                         return JsonResponse({
-                            "message": "User registered successfully",
-                            "signzy_Response" : response.json(),
-                            "user": userRole.id 
-                        }, status=201)
-                except models.UserRole.DoesNotExist:
-                    return JsonResponse({"message":"User id exist but not userRole"},status=404)
-            else:
-                return JsonResponse({"message": response.json()}, status=response.status_code)
+                                "message": "User already registered",
+                                # "signzy_Response" : response.json(),
+                                "user": userRole.id,
+                                "user_role" : userRole.role,
+                                "is_admin" : userRole.user.is_admin,
+                                "is_superadmin" : userRole.user.is_superadmin
+                            }, status=200)
+                    except models.User.DoesNotExist:
+                        with transaction.atomic():
+                            user = models.User.objects.create(
+                                mobile=mobile_number,
+                                email="default@gmail.com"
+                            )
+                            userRole = models.UserRole.objects.create(
+                                user = user,
+                                role = user_role,
+                            )
+                            return JsonResponse({
+                                "message": "User registered successfully",
+                                # "signzy_Response" : response.json(),
+                                "user": userRole.id,
+                                "user_role" : userRole.role,
+                                "is_admin" : userRole.user.is_admin,
+                                "is_superadmin" : userRole.user.is_superadmin
+                            }, status=201)
+                    except models.UserRole.DoesNotExist:
+                        userRole = models.UserRole.objects.create(user=user,role=user_role)
+                        if userRole.role != user_role:
+                            return JsonResponse({"message":"user role is not match"},status=400)
+                        return JsonResponse({
+                                "message": "User already registered",
+                                # "signzy_Response" : response.json(),
+                                "user": userRole.id,
+                                "user_role" : userRole.role,
+                                "is_admin" : userRole.user.is_admin,
+                                "is_superadmin" : userRole.user.is_superadmin
+                            }, status=200)
+                    except Exception as e:
+                        return JsonResponse({"message": str(e)}, status=500)
+                else:
+                    # return JsonResponse({"message": response.json()}, status=response.status_code)
+                    return JsonResponse({"message": "signzy"}, status=500)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -311,7 +331,7 @@ def phonetoPrefillAPI(request,user):
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
 @csrf_exempt
-def SubmitProfileAPI(request,user=None):
+def ProfileAPI(request,user=None):
     if request.method == 'POST':
         data = json.loads(request.body)
         userID = data.get('user')
@@ -337,9 +357,11 @@ def SubmitProfileAPI(request,user=None):
 
                     if not all([alternatePhone, email, address1, address2, firstName, lastName, state,city, postalCode]):
                         return JsonResponse({"message": "All fields are required"}, status=400)
-
+                    
+                    print("email",email)
                     user_role.user.email = email
                     user_role.save()
+                    print("userRole.user.email" ,user_role.user.email)
 
                     try :
                         # update
@@ -542,7 +564,7 @@ def BankAccDetailsAPI(request):
             user_role_id = data.get('user')
 
             if not user_role_id:
-                return JsonResponse({"message": "user_role_id is required"}, status=400)
+                return JsonResponse({"message": "user is required"}, status=400)
 
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
@@ -557,51 +579,54 @@ def BankAccDetailsAPI(request):
 
                 if not account_number or not ifc_code or not account_type:
                     return JsonResponse({"message": "account_number, ifc_code, and account_type are required"}, status=400)
+                
+                is_exists = models.BankAccountDetails.objects.filter(user_role=user_role).exists()
 
-                if models.BankAccountDetails.objects.filter(user_role=user_role, account_number=account_number).exists():
-                    return JsonResponse({"message": "Already there account no."}, status=400)
-
-                bank_account_details = models.BankAccountDetails.objects.create(
-                    user_role=user_role,
-                    account_number=account_number,
-                    ifc_code=ifc_code,
-                    account_type=account_type
-                )
-
-                return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id,"user" :user_role.id}, status=201)
-
+                if is_exists :
+                    bank_account_details = models.BankAccountDetails.objects.create(
+                        user_role=user_role,
+                        account_number=account_number,
+                        ifc_code=ifc_code,
+                        account_type=account_type
+                     )
+                    try :
+                        wallet = models.Wallet.objects.get(user_role=user_role)
+                    except models.Wallet.DoesNotExist:
+                        wallet = models.Wallet.objects.create(
+                            user_role=user_role,
+                            primary_bankID=bank_account_details,
+                            OutstandingBalance = 0,
+                            updated_at=timezone.now()
+                            )
+                    return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id,"user" :user_role.id,"primary_bank":wallet.primary_bankID.id,"primary_bank_AccNo":wallet.primary_bankID.account_number}, status=200)
+                else :
+                    # ek bhi nai hoi 
+                    bank_account_details = models.BankAccountDetails.objects.create(
+                        user_role=user_role,
+                        account_number=account_number,
+                        ifc_code=ifc_code,
+                        account_type=account_type
+                     )
+                    try :
+                        wallet = models.Wallet.objects.get(user_role=user_role)
+                    except models.Wallet.DoesNotExist:
+                        wallet = models.Wallet.objects.create(
+                            user_role=user_role,
+                            primary_bankID=bank_account_details,
+                            OutstandingBalance = 0,
+                            updated_at=timezone.now()
+                            )
+                    return JsonResponse({"message": "Bank account details saved successfully", "bank_account_id": bank_account_details.id,"user" :user_role.id,"primary_bank":wallet.primary_bankID.id,"primary_bank_AccNo":wallet.primary_bankID.account_number}, status=201)
+            except json.JSONDecodeError:
+                return JsonResponse({"message": "Invalid JSON"}, status=400)
+            except Exception as e:
+                return JsonResponse({"message": str(e)}, status=500)
             except KeyError:
                 return JsonResponse({"message": "Missing required fields"}, status=400)
-
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
-
-    # elif request.method == 'GET':
-    #     try:
-    #         data = json.loads(request.body)
-    #         user_role_id = data.get('user_r')
-    #         print(user_role_id)
-
-    #         if not user_role_id:
-    #             return JsonResponse({"message": "user_role_id is required"}, status=400)
-
-    #         try:
-    #             user_role = models.UserRole.objects.get(id=user_role_id)
-    #             print(user_role)
-    #         except models.UserRole.DoesNotExist:
-    #             return JsonResponse({"message": "User role not found"}, status=404)
-
-    #         bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-    #         print(bank_accounts.count())
-    #         if not bank_accounts.exists():
-    #             return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
-
-    #         account_numbers = [{"bank_account_id": acc.id, "account number ending with": str(acc.account_number)[-4:]} for acc in bank_accounts]
-    #         return JsonResponse({"bank_accounts": account_numbers}, status=200)
-
-    #     except Exception as e:
-    #         return JsonResponse({"message": str(e)}, status=500)
-
+        except Exception as e:
+                return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
@@ -611,10 +636,10 @@ def Credit_FundsAPI(request):
         try:
             data = json.loads(request.body)
             user_role_id = data.get('user')
-            bank_acc_id = data.get('bank_acc_id')
+            primary_BankAccID = data.get('primary_BankAccID')
             amount = data.get('amount')
 
-            if not user_role_id or not bank_acc_id or not amount:
+            if not user_role_id or not primary_BankAccID or not amount:
                 return JsonResponse({"message": "user_role_id, bank_acc_id, and amount are required"}, status=400)
 
             try:
@@ -623,24 +648,27 @@ def Credit_FundsAPI(request):
                 return JsonResponse({"message": "User role not found"}, status=404)
 
             try:
-                bank_account = models.BankAccountDetails.objects.get(id=bank_acc_id, user_role=user_role)
+                bank_account = models.BankAccountDetails.objects.get(id=primary_BankAccID, user_role=user_role)
             except models.BankAccountDetails.DoesNotExist:
                 return JsonResponse({"message": "Bank account not found for the given user role"}, status=404)
             
             with transaction.atomic():
                 try:
-                    wallet = models.OutstandingBalance.objects.get(bank_acc=bank_account)
-                    wallet.balance += amount
+                    if bank_account.id != primary_BankAccID:
+                        return JsonResponse({"message":"primary_BankAccID is wrong"},status = 400)
+                    wallet = models.Wallet.objects.get(user_role=user_role,primary_bankID=bank_account)
+                    wallet.OutstandingBalance += amount
                     wallet.updated_at = timezone.now().date()
                     wallet.save()
-                except models.OutstandingBalance.DoesNotExist:
-                    wallet = models.OutstandingBalance.objects.create(
-                        bank_acc=bank_account,
-                        balance=amount,
+                except models.Wallet.DoesNotExist:
+                    wallet = models.Wallet.objects.create(
+                        user_role=user_role,
+                        primary_bankID=bank_account,
+                        OutstandingBalance=amount,
                         updated_at=timezone.now().date()
                     )
 
-                Balancetransaction = models.OutstandingBalanceTransaction.objects.create(
+                Balancetransaction = models.WalletTransaction.objects.create(
                         wallet=wallet,
                         transaction_id=uuid.uuid4(),
                         type='Credited',
@@ -649,7 +677,7 @@ def Credit_FundsAPI(request):
                         status='response',
                         source='bank_to_wallet',
                         purpose='Funds added to wallet',
-                        bank_acc=bank_account,
+                        bank_acc=wallet.primary_bankID.account_number,
                         invoice=None,
                         time_date=timezone.now()
                     )
@@ -657,16 +685,16 @@ def Credit_FundsAPI(request):
                 return JsonResponse({
                         "message": "Funds added successfully",
                         "user" :user_role.id,
-                        "wallet_balance": wallet.balance,
+                        "wallet_balance": wallet.OutstandingBalance,
+                        "primary_BankAccID" : wallet.primary_bankID.id,
+                        "primary_BankAccNo" : wallet.primary_bankID.account_number,
                         "transaction_id": Balancetransaction.transaction_id
                 }, status=200)
 
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
-
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
-
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
@@ -679,15 +707,15 @@ def LedgerAPI(request, user):
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User role not found"}, status=404)
 
-            bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
-            if not bank_accounts.exists():
-                return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
+            # bank_accounts = models.BankAccountDetails.objects.filter(user_role=user_role)
+            # if not bank_accounts.exists():
+            #     return JsonResponse({"message": "No bank accounts found for this user role"}, status=404)
 
-            wallets = models.OutstandingBalance.objects.filter(bank_acc__in=bank_accounts)
-            if not wallets.exists():
+            wallet = models.Wallet.objects.filter(user_role=user_role)
+            if not wallet.exists():
                 return JsonResponse({"message": "No wallets found for this user role"}, status=404)
 
-            transactions = models.OutstandingBalanceTransaction.objects.filter(wallet__in=wallets).order_by('-time_date')
+            transactions = models.WalletTransaction.objects.filter(wallet__in=wallet).order_by('-time_date')
 
             transactions_data = []
             for transaction in transactions:
@@ -704,9 +732,8 @@ def LedgerAPI(request, user):
                     "time_date": transaction.time_date,
                 })
 
-            total_balance = sum(wallet.balance for wallet in wallets)
-
-            return JsonResponse({"transactions": transactions_data, "Balance": total_balance , "user" : user_role.id}, status=200)
+                Balancewallet = wallet.first()
+            return JsonResponse({"transactions": transactions_data, "Balance": Balancewallet.OutstandingBalance , "user" : user_role.id}, status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
@@ -729,7 +756,7 @@ def ShowFundsAPI(request,user_role_id):
         return JsonResponse({"message": "Only GET method is allowed"}, status=405)
 
 @csrf_exempt
-def GetDetails(request, user):
+def GetSellPurchaseDetailsAPI(request, user):
     if request.method == 'GET':
         try:
             try:

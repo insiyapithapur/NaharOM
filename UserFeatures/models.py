@@ -25,7 +25,6 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_active', True)
 
         user = self.create_user(email, mobile, password, **extra_fields)
-        UserRole.objects.create(user=user, role='superAdmin')
         return user
 
 class User(AbstractBaseUser, PermissionsMixin):
