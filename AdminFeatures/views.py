@@ -12,6 +12,7 @@ import base64
 import time
 from django.conf import settings
 import hashlib
+from django.db.models import Q
 
 @csrf_exempt
 def LoginAPI(request):
@@ -122,15 +123,18 @@ def GetInvoicesAPI(request, user_id, primary_invoice_id=None):
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     
 @csrf_exempt
-def InvoiceAPI(request,user_id, primary_invoice_id=None):
+def InvoiceMgtAPI(request,user, primary_invoice_id=None):
     if request.method == 'GET':
         try:
             try:
-                user = models.User.objects.get(id=user_id)
-            except models.User.DoesNotExist:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User not found"}, status=404)
 
-            if not user.is_superadmin:
+            if not user_role.user.is_superadmin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            
+            if not user_role.user.is_admin:
                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
 
             if primary_invoice_id:
@@ -142,8 +146,10 @@ def InvoiceAPI(request,user_id, primary_invoice_id=None):
             else:
                 unfractionalized_invoice_data = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
 
-                fractionalized_invoice_data = models.Post_for_sale.objects.filter(user_id__user__is_superadmin=True)
-                print(fractionalized_invoice_data.count())
+                # fractionalized_invoice_data = models.Post_for_sale.objects.filter(user_id__user__is_superadmin=True)
+                fractionalized_invoice_data = models.Post_for_sale.objects.filter(
+                    Q(user_id__user__is_superadmin=True) | Q(user_id__user__is_admin=True)
+                )
 
                 response_data = []
                 for post in fractionalized_invoice_data:
@@ -164,7 +170,8 @@ def InvoiceAPI(request,user_id, primary_invoice_id=None):
                         'expired' : invoice.expired ,
                         'no_of_units': post.no_of_units,
                         'per_unit_price': post.per_unit_price,
-                        'user_id' : post.user_id.id ,
+                        'total_price' : post.total_price,
+                        'userID' : post.user_id.id ,
                         'remaining_units' : post.remaining_units,
                         'withdrawn' : post.withdrawn,
                         'post_time' : post.post_time ,
@@ -177,7 +184,7 @@ def InvoiceAPI(request,user_id, primary_invoice_id=None):
 
                 all_data = unfractionalized_invoice_data + response_data
                     
-                return JsonResponse(all_data, safe=False, status=200)
+                return JsonResponse({"user": user_role.id, "data": all_data}, safe=False, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

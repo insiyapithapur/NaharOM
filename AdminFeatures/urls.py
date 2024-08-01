@@ -9,7 +9,7 @@ urlpatterns = [
     #particular 1 invoice fetch from primary
     path('GetInvoices/<int:user_id>/<int:primary_invoice_id>/', views.GetInvoicesAPI),
     # used to send all invoice ( admin posted + admin not posted means primary one )
-    path('InvoiceMgt/<int:user_id>/',views.InvoiceAPI),
+    path('InvoiceMgt/<int:user>',views.InvoiceMgtAPI),
     # path('configure/',views.configureAPI),
     # used to post invoice that admin want to
     path('PostInvoice/',views.PostInvoiceAPI),

@@ -762,7 +762,7 @@ def GetSellPurchaseDetailsAPI(request, user):
             try:
                 userRole = models.UserRole.objects.get(id=user)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "user_role_id doesn't exist"}, status=400)
+                return JsonResponse({"message": "user doesn't exist"}, status=400)
 
             invoices = models.Invoices.objects.filter(expired=False)
 
@@ -781,6 +781,7 @@ def GetSellPurchaseDetailsAPI(request, user):
                             'post_for_sellID' : post_for_sale.id,
                             'Invoice_remaining_units': post_for_sale.remaining_units,
                             'Invoice_per_unit_price': post_for_sale.per_unit_price,
+                            'Invoice_total_price' : post_for_sale.total_price ,
                             'Invoice_name': invoice.product_name,
                             'Invoice_post_date': post_for_sale.post_date,
                             'Invoice_post_time': post_for_sale.post_time,
@@ -797,62 +798,130 @@ def GetSellPurchaseDetailsAPI(request, user):
                         }
                         invoice_data_list.append(invoice_data)
 
+            # buyers = models.Buyers.objects.filter(user_id=userRole)
+            # for buyer in buyers:
+            #     buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
+            #     # has_posted_for_sale = buyer_units.filter(post_for_saleID__isnull=False).exists()
+
+            #     # 1 -> yes flag = 1   flag = 1                         flag = 2
+            #     # 2 -> yes flag = 1   flag = 1                         means this is posted for sale
+            #     # 3 -> yes flag = 1   flag = 2
+            #     # 4 -> yes flag = 2   means this is posted for sale
+            #     #  means this is posted for sale
+
+            #     # flag == 2 -> buyer posted for sale
+            #     # flag == 1 -> buyer not posted for sale
+                
+            #     for buyer_unit in buyer_units:
+            #         if buyer_unit.post_for_saleID == None:
+            #             flag =1
+            #         else :
+            #             flag = 2
+            #             break
+            #     if flag == 2:  #posted
+            #         # first_unit = buyer_units.first()
+            #         # invoice = first_unit.unitID.invoice
+            #         invoice_data = {
+            #             'id': invoice.id,
+            #             'Invoice_id': invoice.invoice_id,
+            #             'Invoice_primary_id': invoice.primary_invoice_id,
+            #             'Buyer_id': buyer.id,
+            #             'Posted_no_of_units': buyer.no_of_units,
+            #             'Posted_per_unit_price': buyer.per_unit_price_invested,
+            #             'Invoice_name': invoice.product_name,
+            #             'Buyer_Purchased_date': buyer.purchase_date,
+            #             'Buyer_Purchased_time': buyer.purchase_time,
+            #             'Invoice_interest': invoice.interest,
+            #             'Invoice_xirr': invoice.xirr,
+            #             'Invoice_irr': invoice.irr,
+            #             'Invoice_tenure_in_days': invoice.tenure_in_days,
+            #             'Invoice_expiration_time': invoice.expiration_time,
+            #             'isAdmin': buyer.user_id.user.is_admin,
+            #             'Buyer_user_id' : buyer.user_id.user.id ,
+            #             'type': 'PostedForSale'
+            #         }
+            #         invoice_data_list.append(invoice_data)
+
+            #     if flag == 1:  #not posted
+            #         # first_unit = buyer_units.first()
+            #         # invoice = first_unit.unitID.invoice
+            #         invoice_data = {
+            #             'id': invoice.id,
+            #             'Invoice_id': invoice.invoice_id,
+            #             'Invoice_primary_id': invoice.primary_invoice_id,
+            #             'Buyer_id': buyer.id,
+            #             'Invoice_no_of_units': buyer.no_of_units,
+            #             'Invoice_remaining_units': buyer.no_of_units,
+            #             'Invoice_per_unit_price': buyer.per_unit_price_invested,
+            #             'Invoice_name': invoice.product_name,
+            #             'Invoice_post_date': buyer.purchase_date,
+            #             'Invoice_post_time': buyer.purchase_time,
+            #             'Invoice_interest': invoice.interest,
+            #             'Invoice_xirr': invoice.xirr,
+            #             'Invoice_irr': invoice.irr,
+            #             'Invoice_tenure_in_days': invoice.tenure_in_days,
+            #             'Invoice_expiration_time': invoice.expiration_time,
+            #             'isAdmin': buyer.user_id.user.is_admin,
+            #             'Buyer_user_id' : buyer.user_id.user.id ,
+            #             'type': 'Brought'
+            #         }
+            #         invoice_data_list.append(invoice_data)
             buyers = models.Buyers.objects.filter(user_id=userRole)
             for buyer in buyers:
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer)
-                # has_posted_for_sale = buyer_units.filter(post_for_saleID__isnull=False).exists()
-
-                # 1 -> yes flag = 1   flag = 1                         flag = 2
-                # 2 -> yes flag = 1   flag = 1                         means this is posted for sale
-                # 3 -> yes flag = 1   flag = 2
-                # 4 -> yes flag = 2   means this is posted for sale
-                #  means this is posted for sale
-
-                # flag == 2 -> buyer posted for sale
-                # flag == 1 -> buyer not posted for sale
+                
+                flag = 1  # Default flag to indicate not posted for sale
+                post_for_saleID = None  # Initialize variable to store post_for_saleID
                 
                 for buyer_unit in buyer_units:
-                    if buyer_unit.post_for_saleID == None:
-                        flag =1
-                    else :
-                        flag = 2
+                    if buyer_unit.post_for_saleID is not None:
+                        flag = 2  # Indicate posted for sale
+                        post_for_saleID = buyer_unit.post_for_saleID.id  # Store the post_for_saleID
+                        Posted_no_of_units = buyer_unit.post_for_saleID.no_of_units
+                        Posted_remaining_units = buyer_unit.post_for_saleID.remaining_units
+                        Posted_per_unit_price = buyer_unit.post_for_saleID.per_unit_price
+                        Posted_total_price = buyer_unit.post_for_saleID.total_price
+                        Posted_from_date = buyer_unit.post_for_saleID.from_date
+                        Posted_to_date =  buyer_unit.post_for_saleID.to_date
                         break
-                if flag == 2:  #posted
-                    # first_unit = buyer_units.first()
-                    # invoice = first_unit.unitID.invoice
+
+                invoice = buyer_units.first().unitID.invoice 
+
+                if flag == 2:  # Posted for sale
                     invoice_data = {
                         'id': invoice.id,
                         'Invoice_id': invoice.invoice_id,
                         'Invoice_primary_id': invoice.primary_invoice_id,
                         'Buyer_id': buyer.id,
-                        'Invoice_no_of_units': buyer.no_of_units,
-                        'Invoice_remaining_units': buyer.no_of_units,
-                        'Invoice_per_unit_price': buyer.per_unit_price_invested,
+                        'Buyer_user_id': buyer.user_id.user.id,
+                        'post_for_saleID': post_for_saleID,  
+                        'Posted_no_of_units': Posted_no_of_units,
+                        'Posted_remaining_units' :Posted_remaining_units,
+                        'Posted_per_unit_price': Posted_per_unit_price,
+                        'Posted_total_price' : Posted_total_price ,
+                        'Posted_from_date' :Posted_from_date,
+                        'Posted_to_date' :Posted_to_date,
                         'Invoice_name': invoice.product_name,
-                        'Invoice_post_date': buyer.purchase_date,
-                        'Invoice_post_time': buyer.purchase_time,
+                        'Buyer_Purchased_date': buyer.purchase_date,
+                        'Buyer_Purchased_time': buyer.purchase_time,
                         'Invoice_interest': invoice.interest,
                         'Invoice_xirr': invoice.xirr,
                         'Invoice_irr': invoice.irr,
                         'Invoice_tenure_in_days': invoice.tenure_in_days,
                         'Invoice_expiration_time': invoice.expiration_time,
                         'isAdmin': buyer.user_id.user.is_admin,
-                        'Buyer_user_id' : buyer.user_id.user.id ,
                         'type': 'PostedForSale'
                     }
                     invoice_data_list.append(invoice_data)
-
-                if flag == 1:  #not posted
-                    # first_unit = buyer_units.first()
-                    # invoice = first_unit.unitID.invoice
+                elif flag == 1:  # Not posted for sale
                     invoice_data = {
                         'id': invoice.id,
                         'Invoice_id': invoice.invoice_id,
                         'Invoice_primary_id': invoice.primary_invoice_id,
                         'Buyer_id': buyer.id,
-                        'Invoice_no_of_units': buyer.no_of_units,
-                        'Invoice_remaining_units': buyer.no_of_units,
-                        'Invoice_per_unit_price': buyer.per_unit_price_invested,
+                        'Purchased_no_of_units': buyer.no_of_units,
+                        'Purchased_remaining_units': buyer.no_of_units,
+                        'Purchased_per_unit_price': buyer.per_unit_price_invested,
                         'Invoice_name': invoice.product_name,
                         'Invoice_post_date': buyer.purchase_date,
                         'Invoice_post_time': buyer.purchase_time,
@@ -862,36 +931,10 @@ def GetSellPurchaseDetailsAPI(request, user):
                         'Invoice_tenure_in_days': invoice.tenure_in_days,
                         'Invoice_expiration_time': invoice.expiration_time,
                         'isAdmin': buyer.user_id.user.is_admin,
-                        'Buyer_user_id' : buyer.user_id.user.id ,
+                        'Buyer_user_id': buyer.user_id.user.id,
                         'type': 'Brought'
                     }
                     invoice_data_list.append(invoice_data)
-
-                # if not has_posted_for_sale:
-                #     first_unit = buyer_units.first()
-                #     invoice = first_unit.unitID.invoice
-                #     invoice_data = {
-                #         'id': invoice.id,
-                #         'Invoice_id': invoice.invoice_id,
-                #         'Invoice_primary_id': invoice.primary_invoice_id,
-                #         'Buyer_id': first_unit.buyer_id.id,
-                #         'Invoice_no_of_units': first_unit.buyer_id.no_of_units,
-                #         'Invoice_remaining_units': first_unit.buyer_id.no_of_units,
-                #         'Invoice_per_unit_price': first_unit.buyer_id.per_unit_price_invested,
-                #         'Invoice_name': invoice.product_name,
-                #         'Invoice_post_date': first_unit.buyer_id.purchase_date,
-                #         'Invoice_post_time': first_unit.buyer_id.purchase_time,
-                #         'Invoice_interest': invoice.interest,
-                #         'Invoice_xirr': invoice.xirr,
-                #         'Invoice_irr': invoice.irr,
-                #         'Invoice_tenure_in_days': invoice.tenure_in_days,
-                #         'Invoice_expiration_time': invoice.expiration_time,
-                #         'Invoice_sold': invoice.is_fractionalized,
-                #         'Invoice_posted_for_sale': has_posted_for_sale,
-                #         'isAdmin': False,
-                #         'type': 'Bought'
-                #     }
-                #     invoice_data_list.append(invoice_data)
 
             return JsonResponse({"invoices": invoice_data_list , "user" : userRole.id}, status=200)
         except Exception as e:
