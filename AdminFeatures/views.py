@@ -613,46 +613,58 @@ def UserManagementAPI(request,user):
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
-@csrf_exempt
-def usersLedgerAPI(request,user):
-    if request.method == 'GET':
-        try:
-            user_is_admin = models.UserRole.objects.get(id=user)
+# @csrf_exempt
+# def usersLedgerAPI(request,user):
+#     if request.method == 'GET':
+#         try:
+#             user_is_admin = models.UserRole.objects.get(id=user)
 
-            if not user_is_admin.user.is_admin:
-                return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
+#             if not user_is_admin.user.is_admin:
+#                 return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
             
-            if not user_is_admin.user.is_superadmin:
-                return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
+#             if not user_is_admin.user.is_superadmin:
+#                 return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
             
-            user_roles = models.UserRole.objects.exclude(role__in=['admin', 'superAdmin'])
-            # user_roles_data = [
-            #     {
-            #         "id": user_role.id,
-            #         "user_id": user_role.user.id,
-            #         "role": user_role.role,
-            #         "user_mobile": user_role.user.mobile
-            #     }
-            #     for user_role in user_roles
-            # ]
-            all_users_ledger = []
+#             user_roles = models.UserRole.objects.exclude(role__in=['admin', 'superAdmin'])
+#             # user_roles_data = [
+#             #     {
+#             #         "id": user_role.id,
+#             #         "user_id": user_role.user.id,
+#             #         "role": user_role.role,
+#             #         "user_mobile": user_role.user.mobile
+#             #     }
+#             #     for user_role in user_roles
+#             # ]
+#             all_users_ledger = []
 
-            for user_role in user_roles:
-                try:
-                    bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
-                except models.BankAccountDetails.DoesNotExist:
-                    all_users_ledger = {
-                        "user": user_role.id,
-                        "bankAcc": None
-                    }
+#             for user_role in user_roles:
+#                 try:
+#                     bankAccs = models.BankAccountDetails.objects.filter(user_role=user_role)
+#                     user_ledger = {
+#                         "user": user_role.id,
+#                         "bankAcc_ID" : bankAcc.id,
+#                         "bankAccNo": bankAcc.account_number
+#                     }
+#                     wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
+#                     user_ledger["Balance"] = wallet.balance
+
+#                 except models.BankAccountDetails.DoesNotExist:
+#                     all_users_ledger = {
+#                         "user": user_role.id,
+#                         "bankAcc": None
+#                     }
+#                 except models.OutstandingBalance.DoesNotExist:
+#                     all_users_ledger = {
+#                         "balance":  None
+#                     }
                     
 
-            return JsonResponse({"user_roles": all_users_ledger}, status=200)
+#             return JsonResponse({"user_roles": all_users_ledger}, status=200)
             
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)   
-    else:
-        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+#         except Exception as e:
+#             return JsonResponse({"message": str(e)}, status=500)   
+#     else:
+#         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     
 def generate_token(admin_id, user_role_id):
     timestamp = int(time.time())

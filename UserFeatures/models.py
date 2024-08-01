@@ -96,9 +96,9 @@ class BankAccountDetails(models.Model):
     account_type = models.CharField(max_length=50)
     created_at = models.DateTimeField(default=timezone.now())
 
-class OutstandingBalance(models.Model):
-    bank_acc = models.OneToOneField(BankAccountDetails, on_delete=models.CASCADE)
-    balance = models.FloatField()
+class Wallet(models.Model):
+    user_role = models.OneToOneField(UserRole, on_delete=models.CASCADE)
+    OutstandingBalance = models.FloatField()
     updated_at = models.DateTimeField() 
 
 class Invoices(models.Model):
@@ -191,7 +191,7 @@ class Buyers(models.Model):
     no_of_units = models.IntegerField()
     per_unit_price_invested = models.FloatField()
     # null=True,blank=True
-    wallet = models.ForeignKey('OutstandingBalance', on_delete=models.CASCADE)
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     purchase_date = models.DateField(default=timezone.now())
     purchase_time = models.TimeField(default=timezone.now())
     purchase_date_time = models.DateTimeField(default=timezone.now())
@@ -218,8 +218,8 @@ class Sales_UnitTracker(models.Model):
     unitID = models.ForeignKey(FractionalUnits,on_delete=models.CASCADE)
     sellersID = models.ForeignKey(Sales,on_delete=models.CASCADE,null=True,default=None)
 
-class OutstandingBalanceTransaction(models.Model):
-    wallet = models.ForeignKey(OutstandingBalance, on_delete=models.CASCADE)
+class WalletTransaction(models.Model):
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     transaction_id = models.UUIDField(default=uuid.uuid4, unique=True)
     type = models.CharField(max_length=50 , null=True)  # buy / sell
     creditedAmount = models.FloatField(null=True)

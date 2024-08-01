@@ -10,6 +10,7 @@ urlpatterns = [
     path('verifyStatus/<int:user>',views.verifyStatusAPI),
     path('phoneToPrefill/<int:user>/',views.phonetoPrefillAPI),
     path('submitProfile/',views.SubmitProfileAPI),
+    path('Profile/<int:user>',views.SubmitProfileAPI),
     # path('GetUserDetails/<int:user_id>/',views.GetUserDetailsAPI), #details fetach karavis ane user_role store karis
     # path('status/',views.ChanageStatusAPI),
     # pancard enter api

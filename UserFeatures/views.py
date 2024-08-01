@@ -311,7 +311,7 @@ def phonetoPrefillAPI(request,user):
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
 @csrf_exempt
-def SubmitProfileAPI(request):
+def SubmitProfileAPI(request,user=None):
     if request.method == 'POST':
         data = json.loads(request.body)
         userID = data.get('user')
@@ -447,6 +447,59 @@ def SubmitProfileAPI(request):
                     return JsonResponse({"message" : "Role is not matched"},status=400)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message":"userID does not found"},status=400)
+    
+    elif request.method == 'GET':
+        # userID = request.GET.get('user')
+
+        if not user:
+            return JsonResponse({"message": "userID should be there"}, status=400)
+
+        try:
+            user_role = models.UserRole.objects.get(id=user)
+            response_data = {
+                "user": {
+                    "id": user_role.id,
+                    "email": user_role.user.email,
+                    "mobile" : user_role.user.mobile,
+                    "role": user_role.role,
+                }
+            }
+
+            if user_role.role == 'Individual':
+                try:
+                    individual_details = models.IndividualDetails.objects.get(user_role=user_role)
+                    response_data["profile"] = {
+                        "first_name": individual_details.first_name,
+                        "last_name": individual_details.last_name,
+                        "addressLine1": individual_details.addressLine1,
+                        "addressLine2": individual_details.addressLine2,
+                        "city": individual_details.city,
+                        "state": individual_details.state,
+                        "pin_code": individual_details.pin_code,
+                        "alternate_phone_no": individual_details.alternate_phone_no,
+                    }
+                except models.IndividualDetails.DoesNotExist:
+                    return JsonResponse({"message": "Individual profile not found"}, status=404)
+
+            elif user_role.role == 'Company':
+                try:
+                    company_details = models.CompanyDetails.objects.get(user_role=user_role)
+                    response_data["profile"] = {
+                        "company_name": company_details.company_name,
+                        "addressLine1": company_details.addressLine1,
+                        "addressLine2": company_details.addressLine2,
+                        "city": company_details.city,
+                        "state": company_details.state,
+                        "pin_no": company_details.pin_no,
+                        "alternate_phone_no": company_details.alternate_phone_no,
+                        "public_url_company": company_details.public_url_company,
+                    }
+                except models.CompanyDetails.DoesNotExist:
+                    return JsonResponse({"message": "Company profile not found"}, status=404)
+
+            return JsonResponse(response_data, status=200)
+        except models.UserRole.DoesNotExist:
+            return JsonResponse({"message": "user does not found"}, status=400)
     else:
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
     
