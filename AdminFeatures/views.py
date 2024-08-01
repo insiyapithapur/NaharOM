@@ -611,7 +611,7 @@ def UserManagementAPI(request,user):
                     return JsonResponse({"message" : "UserRole does not exist"},status=400)
                 except Exception as e :
                     return JsonResponse({"message":str(e)},status=500)
-            return JsonResponse(all_user_details, status=200)
+            return JsonResponse(all_user_details, safe=False ,status=200)
 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
