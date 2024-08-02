@@ -868,6 +868,20 @@ def TobuyAPI(request):
                     unit.unitID.sold = True
                     unit.unitID.current_owner = user_role
                     unit.unitID.save()
+
+                    salespurchaseReport = models.SalePurchaseReport.objects.create(
+                        invoiceID = postForSale.invoice_id ,
+                        unitID = unit.unitID ,
+                        seller_ID = postForSale.user_id,
+                        buyerID_ID = user_role ,
+                        Sale_Buy_Date = timezone.now().date(),
+                        Sale_Buy_per_unit_price = postForSale.per_unit_price,
+                        ListingDate = timezone.now().date(),
+                        no_of_days_units_held = (sales.sell_date - postForSale.post_date).days,
+                        interest_due_to_seller = ( postForSale.per_unit_price * 10 ) / 100,
+                        TDS_deducted = ( postForSale.per_unit_price * 10 ) / 100,
+                        IRR = postForSale.invoice_id.irr
+                    )
                 
                 buyer_wallet.OutstandingBalance -= total_price
                 buyer_wallet.save()
@@ -909,7 +923,7 @@ def TobuyAPI(request):
                 if postForSale.remaining_units == 0:
                     postForSale.sold= True
 
-            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id,"user" : user_role.id}, status=201)        
+            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id,"user" : user_role.id , "salespurchaseReport":salespurchaseReport.id}, status=201)        
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

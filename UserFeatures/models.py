@@ -21,6 +21,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, mobile, password=None, **extra_fields):
         extra_fields.setdefault('is_admin', True)
         extra_fields.setdefault('is_superadmin', True)
+        extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_active', True)
 
@@ -155,12 +156,6 @@ class AdminSettings(models.Model):
     def __str__(self):
         return f"Interest Cut Off Time: {self.interest_cut_off_time}"
 
-# class SalePurchaseReport(models.Model):
-#     unit = models.ForeignKey(FractionalUnits, on_delete=models.CASCADE)
-#     seller = models.ForeignKey('Sellers', on_delete=models.CASCADE)
-#     buyer = models.ForeignKey('Buyers', on_delete=models.CASCADE)
-#     transaction_date = models.DateTimeField(auto_now_add=True)
-
 class Configurations(models.Model):
     principal_price = models.FloatField()
     invoice_id = models.ForeignKey(Invoices,on_delete=models.CASCADE)
@@ -230,3 +225,19 @@ class WalletTransaction(models.Model):
     to_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='to_bank_transactions')
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE , null=True)
     time_date = models.DateTimeField()
+
+class SalePurchaseReport(models.Model):
+    invoiceID = models.ForeignKey(Invoices,on_delete=models.CASCADE)
+    unitID = models.ForeignKey(FractionalUnits,on_delete=models.CASCADE)
+    seller_ID = models.ForeignKey(UserRole,on_delete=models.CASCADE , related_name='sellerID')
+    buyerID_ID = models.ForeignKey(UserRole,on_delete=models.CASCADE , related_name='buyerID')
+    Sale_Buy_Date = models.DateField(default=timezone.now().date())
+    Sale_Buy_per_unit_price = models.FloatField()
+    ListingDate = models.DateField(default=timezone.now().date())
+    no_of_days_units_held = models.IntegerField()
+    interest_due_to_seller = models.FloatField()
+    TDS_deducted = models.FloatField()
+    IRR = models.FloatField()
+    
+
+
