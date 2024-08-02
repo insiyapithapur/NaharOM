@@ -684,10 +684,8 @@ def GetSellPurchaseDetailsAPI(request, user):
             invoice_data_list = []
 
             for invoice in invoices:
-                post_for_sales = models.Post_for_sale.objects.filter(invoice_id = invoice ,sold=False,remaining_units__gt=0)
+                post_for_sales = models.Post_for_sale.objects.filter(invoice_id = invoice ,sold=False,remaining_units__gt=0).exclude(user_id=userRole)
                 for post_for_sale in post_for_sales:
-                        if post_for_sale.user_id == userRole:
-                            break
                         invoice_data = {
                             'id': invoice.id,
                             'Invoice_id': invoice.invoice_id,
