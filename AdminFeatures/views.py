@@ -549,59 +549,84 @@ def UserManagementAPI(request,user):
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
-# @csrf_exempt
-# def usersLedgerAPI(request,user):
-#     if request.method == 'GET':
-#         try:
-#             user_is_admin = models.UserRole.objects.get(id=user)
+@csrf_exempt
+def usersLedgerAPI(request, user):
+    if request.method == 'GET':
+        try:
+            user_is_admin = models.UserRole.objects.get(id=user)
 
-#             if not user_is_admin.user.is_admin:
-#                 return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
-            
-#             if not user_is_admin.user.is_superadmin:
-#                 return JsonResponse({"message" : "For this operation you should be admin or superadmin"},status=500)
-            
-#             user_roles = models.UserRole.objects.exclude(role__in=['admin', 'superAdmin'])
-#             # user_roles_data = [
-#             #     {
-#             #         "id": user_role.id,
-#             #         "user_id": user_role.user.id,
-#             #         "role": user_role.role,
-#             #         "user_mobile": user_role.user.mobile
-#             #     }
-#             #     for user_role in user_roles
-#             # ]
-#             all_users_ledger = []
+            if not user_is_admin.user.is_admin and not user_is_admin.user.is_superadmin:
+                return JsonResponse({"message": "For this operation you should be admin or superadmin"}, status=500)
 
-#             for user_role in user_roles:
-#                 try:
-#                     bankAccs = models.BankAccountDetails.objects.filter(user_role=user_role)
-#                     user_ledger = {
-#                         "user": user_role.id,
-#                         "bankAcc_ID" : bankAcc.id,
-#                         "bankAccNo": bankAcc.account_number
-#                     }
-#                     wallet = models.OutstandingBalance.objects.get(bank_acc=bankAcc)
-#                     user_ledger["Balance"] = wallet.balance
+            user_roles = models.UserRole.objects.exclude(Q(user__is_admin=True) | Q(user__is_superadmin=True))
 
-#                 except models.BankAccountDetails.DoesNotExist:
-#                     all_users_ledger = {
-#                         "user": user_role.id,
-#                         "bankAcc": None
-#                     }
-#                 except models.OutstandingBalance.DoesNotExist:
-#                     all_users_ledger = {
-#                         "balance":  None
-#                     }
-                    
+            response_data = []
 
-#             return JsonResponse({"user_roles": all_users_ledger}, status=200)
-            
-#         except Exception as e:
-#             return JsonResponse({"message": str(e)}, status=500)   
-#     else:
-#         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
-    
+            for user_role in user_roles:
+                user_data = {
+                    "user": user_role.id,
+                    "role": user_role.role,
+                    "mobile": user_role.user.mobile,
+                    "email": user_role.user.email,
+                    "bank_Accounts": [],
+                    "wallet_balance": None,
+                    "wallet_transaction": []
+                }
+
+                try:
+                    bankAccs = models.BankAccountDetails.objects.filter(user_role=user_role)
+                    user_data["bank_Accounts"] = [
+                        {
+                            "user": user_role.id,
+                            "bankAcc_ID": bankAcc.id,
+                            "account_number": bankAcc.account_number,
+                            "ifc_code": bankAcc.ifc_code,
+                            "account_type": bankAcc.account_type
+                        }
+                        for bankAcc in bankAccs
+                    ]
+
+                    wallet = models.Wallet.objects.get(user_role=user_role)
+                    user_data["wallet_balance"] = wallet.OutstandingBalance
+                    user_data["primary_bankAcc_ID"] = wallet.primary_bankID.id
+                    wallet_transactions = models.WalletTransaction.objects.filter(wallet=wallet)
+                    user_data["wallet_transaction"] = [
+                        {
+                            "user": wallet_transaction.wallet.primary_bankID.user_role.id,
+                            "walletID": wallet_transaction.wallet.id,
+                            "transaction_id": wallet_transaction.transaction_id,
+                            "type": wallet_transaction.type,
+                            "creditedAmount": wallet_transaction.creditedAmount,
+                            "debitedAmount": wallet_transaction.debitedAmount,
+                            "status": wallet_transaction.status,
+                            "source": wallet_transaction.source,
+                            "purpose": wallet_transaction.purpose,
+                            "from_bank_acc": wallet_transaction.from_bank_acc.account_number if wallet_transaction.from_bank_acc else None,
+                            "from_user": wallet_transaction.from_bank_acc.user_role.id if wallet_transaction.from_bank_acc else None,
+                            "to_bank_acc": wallet_transaction.to_bank_acc.account_number if wallet_transaction.to_bank_acc else None,
+                            "to_user": wallet_transaction.to_bank_acc.user_role.id if wallet_transaction.to_bank_acc else None,
+                            "invoice": wallet_transaction.invoice.invoice_id if wallet_transaction.invoice else None,
+                            "time_date": wallet_transaction.time_date
+                        }
+                        for wallet_transaction in wallet_transactions
+                    ]
+
+                except models.BankAccountDetails.DoesNotExist:
+                    pass  
+                except models.Wallet.DoesNotExist:
+                    pass  
+                except models.WalletTransaction.DoesNotExist:
+                    pass  
+
+                response_data.append(user_data)
+
+            return JsonResponse(response_data, safe=False, status=200)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
 def generate_token(admin_id, user_role_id):
     timestamp = int(time.time())
     token = f"{admin_id}:{user_role_id}:{timestamp}"
