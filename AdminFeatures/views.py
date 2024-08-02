@@ -56,8 +56,7 @@ def filter_invoice_data(invoice):
         "interest_rate" : product.get('interest_rate'),
         "xirr" : product.get('xirr_in_percentage'),
         "principle_amt" : product.get('principle_amt'),
-        "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days')),
-        "type" : "unfractionalized"
+        "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days'))
     }
 
 @csrf_exempt
@@ -114,7 +113,50 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                 filtered_invoice_data = filter_invoice_data(invoice_data)
                 return JsonResponse(filtered_invoice_data, status=200)
             else:
-                unfractionalized_invoice_data = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
+                unfractionalized_invoices_data = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
+                unfractionalized_response_data = []
+                for unfractionalized_invoice_data in unfractionalized_invoices_data:
+                    # print("unfractionalized_invoice_data primary_invoice_id:", unfractionalized_invoice_data['primary_invoice_id'])
+                    try :
+                        check_for_invoice = models.Invoices.objects.get(primary_invoice_id = unfractionalized_invoice_data['primary_invoice_id'])
+                        check_for_configuration = models.Configurations.objects.get(invoice_id = check_for_invoice)
+                        # print("check_for_invoice.primary_invoice_id: ",check_for_invoice.primary_invoice_id , " check_for_configuration.primary_invoice_id : ", check_for_configuration.invoice_id.primary_invoice_id , " check_for_configuration.remaining_price : ",check_for_configuration.remaining_price , " check_for_configuration.principal_price : ",check_for_configuration.principal_price , " check_for_invoice.principal_price : ",check_for_invoice.principal_price)
+                        unfractionalized_data = {
+                            "primary_invoice_id": unfractionalized_invoice_data['primary_invoice_id'],
+                            # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
+                            "buyer_poc_name" : unfractionalized_invoice_data['buyer_poc_name'],
+                            "product_name": unfractionalized_invoice_data['product_name'],
+                            "irr": unfractionalized_invoice_data['irr'],
+                            "tenure_in_days": unfractionalized_invoice_data['tenure_in_days'],
+                            "interest_rate" : unfractionalized_invoice_data['interest_rate'],
+                            "xirr" : unfractionalized_invoice_data['xirr'],
+                            "principle_amt" : unfractionalized_invoice_data['principle_amt'],
+                            "remaining_amt" : check_for_configuration.remaining_price,
+                            "expiration_time" : unfractionalized_invoice_data['expiration_time'],
+                            "type" : "unfractionalized"
+                        }
+                        unfractionalized_response_data.append(unfractionalized_data)
+                    except models.Invoices.DoesNotExist :
+                        unfractionalized_data = {
+                            "primary_invoice_id": unfractionalized_invoice_data['primary_invoice_id'],
+                            # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
+                            "buyer_poc_name" : unfractionalized_invoice_data['buyer_poc_name'],
+                            "product_name": unfractionalized_invoice_data['product_name'],
+                            "irr": unfractionalized_invoice_data['irr'],
+                            "tenure_in_days": unfractionalized_invoice_data['tenure_in_days'],
+                            "interest_rate" : unfractionalized_invoice_data['interest_rate'],
+                            "xirr" : unfractionalized_invoice_data['xirr'],
+                            "principle_amt" : unfractionalized_invoice_data['principle_amt'],
+                            "remaining_amt" : unfractionalized_invoice_data['principle_amt'],
+                            "expiration_time" : unfractionalized_invoice_data['expiration_time'],
+                            "type" : "unfractionalized"
+                        }
+                        unfractionalized_response_data.append(unfractionalized_data)
+                    except models.Configurations.DoesNotExist:
+                        unfractionalized_data = {
+                            "primary_invoice_id" : unfractionalized_invoice_data['primary_invoice_id'],
+                            "type" : "Invoice table have this id but configuration table does not have"
+                        }
 
                 # fractionalized_invoice_data = models.Post_for_sale.objects.filter(user_id__user__is_superadmin=True)
                 fractionalized_invoice_data = models.Post_for_sale.objects.filter(
@@ -152,7 +194,8 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                     }
                     response_data.append(post_data)
 
-                all_data = unfractionalized_invoice_data + response_data
+                # all_data = unfractionalized_invoice_data + response_data
+                all_data = response_data + unfractionalized_response_data
                     
                 return JsonResponse({"user": user_role.id, "data": all_data}, safe=False, status=200)
         except json.JSONDecodeError:
