@@ -10,6 +10,7 @@ urlpatterns = [
 
     # used to send all invoice (  fractionalized_invoice_data , unfractionalized_invoice_data  ,Partial_unfractionalized_invoice_data )
     path('InvoiceMgt/<int:user>',views.InvoiceMgtAPI),  #DONE
+    path('configurations/',views.ConfigurationAPI),
     # used to post invoice that admin want to
     path('PostInvoice/',views.PostInvoiceAPI), #DONE
     path('UserManagement/<int:user>',views.UserManagementAPI), #DONE

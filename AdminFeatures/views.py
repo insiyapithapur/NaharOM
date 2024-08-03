@@ -53,7 +53,7 @@ def filter_invoice_data(invoice):
         "product_name": product.get('name'),
         "irr": product.get('interest_rate_fixed'),
         "tenure_in_days": product.get('tenure_in_days'),
-        "interest_rate" : product.get('interest_rate'),
+        "interest_rate" : product.get('interest'),
         "xirr" : product.get('xirr_in_percentage'),
         "principle_amt" : product.get('principle_amt'),
         "expiration_time" : timezone.now() + timezone.timedelta(days=product.get('tenure_in_days'))
@@ -99,9 +99,6 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                 user_role = models.UserRole.objects.get(id=user)
             except models.UserRole.DoesNotExist:
                 return JsonResponse({"message": "User not found"}, status=404)
-
-            if not user_role.user.is_superadmin:
-                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
             
             if not user_role.user.is_admin:
                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
@@ -113,51 +110,73 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                 filtered_invoice_data = filter_invoice_data(invoice_data)
                 return JsonResponse(filtered_invoice_data, status=200)
             else:
-                unfractionalized_invoices_data = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
-                unfractionalized_response_data = []
-                for unfractionalized_invoice_data in unfractionalized_invoices_data:
-                    # print("unfractionalized_invoice_data primary_invoice_id:", unfractionalized_invoice_data['primary_invoice_id'])
-                    try :
-                        check_for_invoice = models.Invoices.objects.get(primary_invoice_id = unfractionalized_invoice_data['primary_invoice_id'])
-                        check_for_configuration = models.Configurations.objects.get(invoice_id = check_for_invoice)
-                        # print("check_for_invoice.primary_invoice_id: ",check_for_invoice.primary_invoice_id , " check_for_configuration.primary_invoice_id : ", check_for_configuration.invoice_id.primary_invoice_id , " check_for_configuration.remaining_price : ",check_for_configuration.remaining_price , " check_for_configuration.principal_price : ",check_for_configuration.principal_price , " check_for_invoice.principal_price : ",check_for_invoice.principal_price)
-                        unfractionalized_data = {
-                            "primary_invoice_id": unfractionalized_invoice_data['primary_invoice_id'],
-                            # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
-                            "buyer_poc_name" : unfractionalized_invoice_data['buyer_poc_name'],
-                            "product_name": unfractionalized_invoice_data['product_name'],
-                            "irr": unfractionalized_invoice_data['irr'],
-                            "tenure_in_days": unfractionalized_invoice_data['tenure_in_days'],
-                            "interest_rate" : unfractionalized_invoice_data['interest_rate'],
-                            "xirr" : unfractionalized_invoice_data['xirr'],
-                            "principle_amt" : unfractionalized_invoice_data['principle_amt'],
-                            "remaining_amt" : check_for_configuration.remaining_price,
-                            "expiration_time" : unfractionalized_invoice_data['expiration_time'],
-                            "type" : "unfractionalized"
-                        }
-                        unfractionalized_response_data.append(unfractionalized_data)
-                    except models.Invoices.DoesNotExist :
-                        unfractionalized_data = {
-                            "primary_invoice_id": unfractionalized_invoice_data['primary_invoice_id'],
-                            # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
-                            "buyer_poc_name" : unfractionalized_invoice_data['buyer_poc_name'],
-                            "product_name": unfractionalized_invoice_data['product_name'],
-                            "irr": unfractionalized_invoice_data['irr'],
-                            "tenure_in_days": unfractionalized_invoice_data['tenure_in_days'],
-                            "interest_rate" : unfractionalized_invoice_data['interest_rate'],
-                            "xirr" : unfractionalized_invoice_data['xirr'],
-                            "principle_amt" : unfractionalized_invoice_data['principle_amt'],
-                            "remaining_amt" : unfractionalized_invoice_data['principle_amt'],
-                            "expiration_time" : unfractionalized_invoice_data['expiration_time'],
-                            "type" : "unfractionalized"
-                        }
-                        unfractionalized_response_data.append(unfractionalized_data)
-                    except models.Configurations.DoesNotExist:
-                        unfractionalized_data = {
-                            "primary_invoice_id" : unfractionalized_invoice_data['primary_invoice_id'],
-                            "type" : "Invoice table have this id but configuration table does not have"
-                        }
+                configured_invoices = models.Configurations.objects.filter(remaining_units__gt=0)
+                configured_invoices_data = []
+                for configured_invoice in configured_invoices:
+                    configured_invoice = {
+                        "id" : configured_invoice.invoice_id.id,
+                        "invoice_id" : configured_invoice.invoice_id.invoice_id,
+                        "primary_invoice_id": configured_invoice.invoice_id.primary_invoice_id,
+                        'configured_ID' : configured_invoice.id,
+                    #    hyperlink attach karvani che j dashboard open kare invoice no primary mathi
+                        "product_name": configured_invoice.invoice_id.product_name,
+                        "irr": configured_invoice.invoice_id.irr,
+                        "tenure_in_days": configured_invoice.invoice_id.tenure_in_days,
+                        "interest_rate" : configured_invoice.invoice_id.interest,
+                        "xirr" : configured_invoice.invoice_id.xirr,
+                        "expiration_time" : configured_invoice.invoice_id.expiration_time,
+                        'principle_amt' : configured_invoice.principal_price ,
+                        'no_of_units' : configured_invoice.no_of_units ,
+                        'invoice_id' : configured_invoice.invoice_id ,
+                        'user_id' : configured_invoice.user_id,
+                        'remaining_units' : configured_invoice.remaining_units,
+                        "type" : "configured",
+                    }
 
+                check_configured_invoices = models.Configurations.objects.all()
+                configured_invoice_ids = {inv.invoice_id.primary_invoice_id for inv in check_configured_invoices}
+
+                unfractionalized_invoices = [filter_invoice_data(inv) for inv in invoices_data['filtered_invoices']]
+                unfractionalized_invoices_data = []
+
+                for unfractionalized_invoice in unfractionalized_invoices:
+                    if unfractionalized_invoice['primary_invoice_id'] not in configured_invoice_ids:
+                        unfractionalized_data = {
+                            "primary_invoice_id": unfractionalized_invoice['primary_invoice_id'],
+                            # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
+                            "buyer_poc_name" : unfractionalized_invoice['buyer_poc_name'],
+                            "product_name": unfractionalized_invoice['product_name'],
+                            "irr": unfractionalized_invoice['irr'],
+                            "tenure_in_days": unfractionalized_invoice['tenure_in_days'],
+                            "interest_rate" : unfractionalized_invoice['interest_rate'],
+                            "xirr" : unfractionalized_invoice['xirr'],
+                            "principle_amt" : unfractionalized_invoice['principle_amt'],
+                            "remaining_amt" : unfractionalized_invoice['principle_amt'],
+                            "expiration_time" : unfractionalized_invoice['expiration_time'],
+                            "type" : "unfractionalized"
+                        }
+                        unfractionalized_invoices_data.append(unfractionalized_data)
+                    # except models.Invoices.DoesNotExist :
+                    #     unfractionalized_data = {
+                    #         "primary_invoice_id": unfractionalized_invoice_data['primary_invoice_id'],
+                    #         # hyperlink attach karvani che j dashboard open kare invoice no primary mathi
+                    #         "buyer_poc_name" : unfractionalized_invoice_data['buyer_poc_name'],
+                    #         "product_name": unfractionalized_invoice_data['product_name'],
+                    #         "irr": unfractionalized_invoice_data['irr'],
+                    #         "tenure_in_days": unfractionalized_invoice_data['tenure_in_days'],
+                    #         "interest_rate" : unfractionalized_invoice_data['interest_rate'],
+                    #         "xirr" : unfractionalized_invoice_data['xirr'],
+                    #         "principle_amt" : unfractionalized_invoice_data['principle_amt'],
+                    #         "remaining_amt" : unfractionalized_invoice_data['principle_amt'],
+                    #         "expiration_time" : unfractionalized_invoice_data['expiration_time'],
+                    #         "type" : "unfractionalized"
+                    #     }
+                    #     unfractionalized_response_data.append(unfractionalized_data)
+                    # except models.Configurations.DoesNotExist:
+                    #     unfractionalized_data = {
+                    #         "primary_invoice_id" : unfractionalized_invoice_data['primary_invoice_id'],
+                    #         "type" : "Invoice table have this id but configuration table does not have"
+                    #     }
                 # fractionalized_invoice_data = models.Post_for_sale.objects.filter(user_id__user__is_superadmin=True)
                 fractionalized_invoice_data = models.Post_for_sale.objects.filter(
                     Q(user_id__user__is_superadmin=True) | Q(user_id__user__is_admin=True)
@@ -195,7 +214,7 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                     response_data.append(post_data)
 
                 # all_data = unfractionalized_invoice_data + response_data
-                all_data = response_data + unfractionalized_response_data
+                all_data = response_data + configured_invoices_data + unfractionalized_invoices_data
                     
                 return JsonResponse({"user": user_role.id, "data": all_data}, safe=False, status=200)
         except json.JSONDecodeError:
@@ -206,91 +225,31 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
         return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
 @csrf_exempt
-def PostInvoiceAPI(request):
+def ConfigurationAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            user = data.get('user')
             primary_invoice_id = data.get('primary_invoice_id')
-            user_id = data.get('user')
-            no_of_units = data.get('no_of_units')
+            no_of_units = data.get('no_units')
             per_unit_price = data.get('per_unit_price')
-            from_date = data.get('from_date')
-            to_date = data.get('to_date')
-            total_price = data.get('total_price')
 
             try:
-                user_role = models.UserRole.objects.get(id=user_id)
+                user_role = models.UserRole.objects.get(id=user)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message":"user_id does not exist"},status=400)
+                return JsonResponse({"message": "User not found"}, status=404)
             
             if not user_role.user.is_admin:
-                return JsonResponse({"message":"For this operation you have to be admin"},status=400)
-            
-            if not user_role.user.is_superadmin:
-                return JsonResponse({"message":"For this operation you have to be admin"},status=400)
-        
-            try:
-                invoice = models.Invoices.objects.get(primary_invoice_id=primary_invoice_id)
-                print("invoice.id : " , invoice.id , "invoice.invoice_id : ",invoice.invoice_id)
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role","user":user_role}, status=403)
 
+            invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
+            if not invoice_data or not invoice_data.get('product'):
+                return JsonResponse({"message": "Invoice data not found or product is null","user":user_role}, status=404)
+            with transaction.atomic():
                 try :
-                    configure = models.Configurations.objects.get(invoice_id=invoice)
-                    if configure.remaining_price < total_price :
-                        return JsonResponse({"message" : "remaining price is less than a price you are requesting"},status=400)
-                    
-                    with transaction.atomic():
-                        fractional_units = []
-                        for _ in range(no_of_units):
-                            fractional_unit = models.FractionalUnits(
-                                invoice=invoice,
-                                current_owner=None, 
-                                sold=False,
-                                created_At=timezone.now()
-                            )
-                            fractional_unit.save()
-                            fractional_units.append(fractional_unit)
-                        
-                        post_for_sale = models.Post_for_sale.objects.create(
-                            no_of_units = no_of_units ,
-                            per_unit_price = per_unit_price ,
-                            user_id = user_role ,
-                            invoice_id = invoice ,
-                            total_price = total_price,
-                            remaining_units = no_of_units ,
-                            withdrawn = False ,
-                            post_time = timezone.now().time() ,
-                            post_date = timezone.now().date(),
-                            from_date = from_date ,
-                            to_date = to_date ,
-                            post_dateTime = timezone.now() ,
-                            configurationID = configure ,
-                            is_admin =  user_role.user.is_admin
-                        )
-
-                        for fractional_unit in fractional_units:
-                            models.Post_For_Sale_UnitTracker.objects.create(
-                                unitID=fractional_unit,
-                                post_for_saleID=post_for_sale
-                            )
-                        
-                        configure.remaining_price -= total_price
-                        configure.save()
-
-                        if configure.remaining_price == 0 :
-                            invoice.is_fractionalized = True
-                            invoice.save()
-                        
-                    return JsonResponse({"message": "Successfully posted for sale", "posted_for_saleID": post_for_sale.id , 'invoice_id' : post_for_sale.invoice_id.id}, status=201)
-    
-                except models.Configurations.DoesNotExist:
-                    return JsonResponse({"message" : "Invoice id is there but did not configure , Please contact to admin"},status=400)
-                
-            except models.Invoices.DoesNotExist:
-                with transaction.atomic():
-                    invoice_data = next((inv for inv in invoices_data['filtered_invoices'] if inv['id'] == primary_invoice_id), None)
-                    if not invoice_data or not invoice_data.get('product'):
-                        return JsonResponse({"message": "Invoice data not found or product is null"}, status=404)
-
+                    invoice = models.Invoices.objects.get(primary_invoice_id=primary_invoice_id)
+                    return JsonResponse({"message":"Configuration of this invoice is already done","invoiceID":invoice.id,"user":user_role.id},status=200)
+                except models.Invoices.DoesNotExist:
                     product_data = invoice_data['product']
                     product_name = product_data['name']
                     principal_price = product_data['principle_amt']
@@ -309,66 +268,97 @@ def PostInvoiceAPI(request):
                             irr = irr ,
                             tenure_in_days = tenure_in_days ,
                             expiration_time = expiration_time ,
-                            is_fractionalized = False ,
                             expired = False ,
                             created_At = timezone.now()
                         )
-                    print(invoice.id)
-                    
+
                     configure = models.Configurations.objects.create(
-                        principal_price = invoice.principal_price ,
-                        invoice_id = invoice ,
-                        user_id = user_role ,
-                        remaining_price = principal_price ,
-                    )
-                    print("configure.id ",configure.id)
-
-                    fractional_units = []
+                        principal_price = principal_price,
+                        no_of_units = no_of_units ,
+                        invoice_id = invoice,
+                        user_id = user_role,
+                        remaining_units = no_of_units
+                        ) 
+                    
                     for _ in range(no_of_units):
-                        fractional_unit = models.FractionalUnits(
-                            invoice=invoice,
-                            current_owner=None, 
-                            sold=False,
-                            created_At=timezone.now()
-                        )
-                        fractional_unit.save()
-                        fractional_units.append(fractional_unit)
-                    # print(fractional_units.count())
+                        fractional_unit = models.FractionalUnits.objects.create(
+                                invoice = invoice,
+                                current_owner = None,
+                                sold = False,
+                                configurationID = configure,
+                                created_At = timezone.now()
+                            )
+                    return JsonResponse({"message": "Successfully configured ","invoice" : invoice.id , "configured" : configure.id ,"user":user_role}, status=200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST methods are allowed"}, status=405)
 
-                    post_for_sale = models.Post_for_sale.objects.create(
-                            no_of_units = no_of_units ,
-                            per_unit_price = per_unit_price ,
-                            total_price = total_price,
-                            user_id = user_role ,
-                            invoice_id = invoice ,
-                            remaining_units = no_of_units ,
-                            withdrawn = False ,
-                            post_time = timezone.now().time() ,
-                            post_date = timezone.now().date() ,
-                            from_date = from_date ,
-                            to_date = to_date ,
-                            post_dateTime = timezone.now() ,
-                            configurationID = configure ,
-                            is_admin =  user_role.user.is_admin
-                    )
-                    print(post_for_sale.id)
+@csrf_exempt
+def PostInvoiceAPI(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user')
+            no_of_units = data.get('no_of_units')
+            per_unit_price = data.get('per_unit_price')
+            from_date = data.get('from_date')
+            to_date = data.get('to_date')
+            total_price = data.get('total_price')
+            configureID = data.get('configureID')
 
-                    for fractional_unit in fractional_units:
-                        models.Post_For_Sale_UnitTracker.objects.create(
-                            unitID=fractional_unit,
-                            post_for_saleID=post_for_sale    
-                        )
-
-                    print(configure.remaining_price)
-                    configure.remaining_price -= total_price
-                    configure.save()
-
-                    if configure.remaining_price == 0 :
-                        invoice.is_fractionalized = True
-                        invoice.save()
+            try:
+                user_role = models.UserRole.objects.get(id=user_id)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message":"user does not exist"},status=400)
             
-                    return JsonResponse({"message": "Successfully created Invoice and configured also and Successfully posted for sale", "posted_for_saleID": post_for_sale.id , 'invoice_id' : post_for_sale.invoice_id.id}, status=201)
+            if not user_role.user.is_admin:
+                return JsonResponse({"message":"For this operation you have to be admin","user":user_role.id},status=400)
+        
+            try:
+                configure = models.Configurations.objects.get(id=configureID)  
+                if configure.remaining_units < no_of_units:
+                    return JsonResponse({"message" : "Not sufficient units for selling","user":user_role.id},status=400)
+                post_for_sale = models.Post_for_sale.objects.create(
+                    no_of_units = no_of_units ,
+                    per_unit_price = per_unit_price ,
+                    user_id = user_role ,
+                    invoice_id = configure.invoice_id ,
+                    total_price = total_price,
+                    remaining_units = no_of_units ,
+                    withdrawn = False ,
+                    post_time = timezone.now().time() ,
+                    post_date = timezone.now().date(),
+                    from_date = from_date ,
+                    to_date = to_date ,
+                    post_dateTime = timezone.now() ,
+                    configurationID = configure ,
+                    is_admin =  user_role.user.is_admin
+                )
+                fractional_units = models.FractionalUnits.objects.filter(
+                    posted_for_sale=False,
+                    invoice=configure.invoice_id,
+                    configurationID=configure,
+                    current_owner__isnull=True
+                )[:no_of_units]
 
+                if fractional_units.count() < no_of_units:
+                    return JsonResponse({"message": "Not enough fractional units available"}, status=400)
+
+                for unit in fractional_units:
+                    models.Post_For_Sale_UnitTracker.objects.create(
+                        unitID=unit,
+                        post_for_saleID=post_for_sale,
+                        sellersID=None  
+                    )
+                    unit.posted_for_sale = True
+                    unit.save()
+
+                configure.remaining_units -= no_of_units
+                configure.save()
+                return JsonResponse({"message": "Successfully posted for sale", "posted_for_saleID": post_for_sale.id , 'invoice_id' : post_for_sale.invoice_id.id,"user":user_role.id}, status=201)
+            except models.Configurations.DoesNotExist:
+                 return JsonResponse({"message":"Configuration does not exist" , "user":user_role.id},status=400)   
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

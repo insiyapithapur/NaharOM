@@ -110,7 +110,6 @@ class Invoices(models.Model):
     irr = models.FloatField()
     tenure_in_days = models.IntegerField()
     expiration_time = models.DateTimeField()
-    is_fractionalized = models.BooleanField()
     expired = models.BooleanField(default=False)
     created_At = models.DateTimeField(default=timezone.now())
 
@@ -128,11 +127,19 @@ class Invoices(models.Model):
     def __str__(self):
         return self.invoice_id
 
+class Configurations(models.Model):
+    principal_price = models.FloatField()
+    no_of_units = models.IntegerField()
+    invoice_id = models.OneToOneField(Invoices,on_delete=models.CASCADE,unique=True)
+    user_id = models.ForeignKey(UserRole,on_delete=models.CASCADE)
+    remaining_units = models.IntegerField()
+    
 class FractionalUnits(models.Model):
     fractional_unit_id = models.CharField(max_length=20, unique=True, editable=False)
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE)
     current_owner = models.ForeignKey(UserRole, on_delete=models.CASCADE, null=True, blank=True)
-    sold = models.BooleanField(default=False)
+    posted_for_sale = models.BooleanField(default=False)
+    configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE,null=True, blank=True)
     created_At = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
@@ -155,12 +162,6 @@ class AdminSettings(models.Model):
 
     def __str__(self):
         return f"Interest Cut Off Time: {self.interest_cut_off_time}"
-
-class Configurations(models.Model):
-    principal_price = models.FloatField()
-    invoice_id = models.ForeignKey(Invoices,on_delete=models.CASCADE)
-    user_id = models.ForeignKey(UserRole,on_delete=models.CASCADE)
-    remaining_price = models.FloatField()
 
 class Post_for_sale(models.Model):
   no_of_units = models.IntegerField()
