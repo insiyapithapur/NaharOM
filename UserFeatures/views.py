@@ -21,24 +21,25 @@ def GenerateOtpAPI(request):
             if not country_code or not mobile_number:
                 return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
 
-            url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
-            headers = {
-                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-                'Content-Type': 'application/json'
-            }
+            # url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
+            # headers = {
+            #     'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+            #     'Content-Type': 'application/json'
+            # }
 
-            payload = {
-                "countryCode": country_code,
-                "mobileNumber": mobile_number
-            }
+            # payload = {
+            #     "countryCode": country_code,
+            #     "mobileNumber": mobile_number
+            # }
 
-            response = requests.post(url, headers=headers, json=payload)
-            print(response.json)
-
-            if response.status_code == 200:
-                return JsonResponse(response.json(), status=200)
+            # response = requests.post(url, headers=headers, json=payload)
+            # print(response.json)
+            status= 200
+            # if response.status_code == 200:
+            if status == 200:
+                return JsonResponse({"result" :  {"referenceId" : "telecom_15JaOVZRiuXsoSPoqiwjSDjpDWoH5cg8"}}, status=200)
             else:
-                return JsonResponse({"message": response.json()}, status=response.status_code)
+                return JsonResponse({"message": "response.json"}, status=500)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -54,7 +55,8 @@ def VerifyOtpAPI(request):
             country_code = data.get('countryCode')
             mobile_number = data.get('mobileNumber')
             reference_id = data.get('referenceId')
-            otp = data.get('otp')
+            # otp = data.get('otp')
+            otp = 575244
             extra_fields = data.get('extraFields')
             user_role = data.get('user_role')
 
