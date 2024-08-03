@@ -130,6 +130,7 @@ class Invoices(models.Model):
 class Configurations(models.Model):
     principal_price = models.FloatField()
     no_of_units = models.IntegerField()
+    per_unit_price = models.FloatField()
     invoice_id = models.OneToOneField(Invoices,on_delete=models.CASCADE,unique=True)
     user_id = models.ForeignKey(UserRole,on_delete=models.CASCADE)
     remaining_units = models.IntegerField()
