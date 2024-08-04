@@ -22,25 +22,25 @@ def GenerateOtpAPI(request):
             if not country_code or not mobile_number:
                 return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
 
-            # url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
-            # headers = {
-            #     'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-            #     'Content-Type': 'application/json'
-            # }
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
+            headers = {
+                'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
+                'Content-Type': 'application/json'
+            }
 
-            # payload = {
-            #     "countryCode": country_code,
-            #     "mobileNumber": mobile_number
-            # }
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number
+            }
 
-            # response = requests.post(url, headers=headers, json=payload)
+            response = requests.post(url, headers=headers, json=payload)
             # print(response.json)
-            status= 200
-            # if response.status_code == 200:
-            if status == 200:
-                return JsonResponse({"result" :  {"referenceId" : "telecom_15JaOVZRiuXsoSPoqiwjSDjpDWoH5cg8"}}, status=200)
+            # status= 200
+            if response.status_code == 200:
+            # if status == 200:
+                return JsonResponse({"result": response.json()}, status=200)
             else:
-                return JsonResponse({"message": "response.json"}, status=500)
+                return JsonResponse({"message": response.json()}, status=response.status_code)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -56,33 +56,33 @@ def VerifyOtpAPI(request):
             country_code = data.get('countryCode')
             mobile_number = data.get('mobileNumber')
             reference_id = data.get('referenceId')
-            # otp = data.get('otp')
-            otp = 575244
+            otp = data.get('otp')
+            # otp = 575244
             extra_fields = data.get('extraFields')
             user_role = data.get('user_role')
 
             if not all([country_code, mobile_number, user_role ,reference_id, otp, str(extra_fields)]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
-            # url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
-            # headers = {
-            #     'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-            #     'Content-Type': 'application/json'
-            # }
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
+            headers = {
+                'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
+                'Content-Type': 'application/json'
+            }
 
-            # payload = {
-            #     "countryCode": country_code,
-            #     "mobileNumber": mobile_number,
-            #     "referenceId": reference_id,
-            #     "otp": otp,
-            #     "extraFields": extra_fields
-            # }
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number,
+                "referenceId": reference_id,
+                "otp": otp,
+                "extraFields": extra_fields
+            }
 
-            # response = requests.post(url, headers=headers, json=payload)
-            status_code = 200
+            response = requests.post(url, headers=headers, json=payload)
+            # status_code = 200
             with transaction.atomic():
-            # if response.status_code == 200:
-                if status_code == 200:
+                if response.status_code == 200:
+                # if status_code == 200:
                     try:
                         user = models.User.objects.get(mobile = mobile_number)
                         userRole = models.UserRole.objects.get(user = user)
@@ -90,7 +90,7 @@ def VerifyOtpAPI(request):
                             return JsonResponse({"message":"user role is not match"},status=400)
                         return JsonResponse({
                                 "message": "User already registered",
-                                # "signzy_Response" : response.json(),
+                                "signzy_Response" : response.json(),
                                 "user": userRole.id,
                                 "user_role" : userRole.role,
                                 "is_admin" : userRole.user.is_admin,
@@ -108,7 +108,7 @@ def VerifyOtpAPI(request):
                             )
                             return JsonResponse({
                                 "message": "User registered successfully",
-                                # "signzy_Response" : response.json(),
+                                "signzy_Response" : response.json(),
                                 "user": userRole.id,
                                 "user_role" : userRole.role,
                                 "is_admin" : userRole.user.is_admin,
@@ -120,7 +120,7 @@ def VerifyOtpAPI(request):
                             return JsonResponse({"message":"user role is not match"},status=400)
                         return JsonResponse({
                                 "message": "User already registered",
-                                # "signzy_Response" : response.json(),
+                                "signzy_Response" : response.json(),
                                 "user": userRole.id,
                                 "user_role" : userRole.role,
                                 "is_admin" : userRole.user.is_admin,
@@ -129,8 +129,8 @@ def VerifyOtpAPI(request):
                     except Exception as e:
                         return JsonResponse({"message": str(e)}, status=500)
                 else:
-                    # return JsonResponse({"message": response.json()}, status=response.status_code)
-                    return JsonResponse({"message": "signzy"}, status=500)
+                    return JsonResponse({"message": response.json()}, status=response.status_code)
+                    # return JsonResponse({"message": "signzy"}, status=500)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -191,7 +191,7 @@ def phonetoPrefillAPI(request,user):
 
             url = 'https://api-preproduction.signzy.app/api/v3/phonekyc/phone-prefill-v2'
             headers = {
-                'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+                'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
                 'Content-Type': 'application/json'
             }
 
