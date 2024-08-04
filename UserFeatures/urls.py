@@ -6,7 +6,7 @@ urlpatterns = [
     path('generateOTP/',views.GenerateOtpAPI),
     path('verifyOtp/',views.VerifyOtpAPI), #DONE
     path('verifyStatus/<int:user>',views.verifyStatusAPI), #DONE
-    path('phoneToPrefill/<int:user>',views.phonetoPrefillAPI), #DONE
+    path('phoneToPrefill/<int:user>',views.phonetoPrefillAPI),   #change name
     path('Profile/',views.ProfileAPI), #DONE
     path('Profile/<int:user>',views.ProfileAPI), #DONE
     path('BankAccDetails/',views.BankAccDetailsAPI), #DONE

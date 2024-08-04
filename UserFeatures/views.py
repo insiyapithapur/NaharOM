@@ -190,59 +190,73 @@ def phonetoPrefillAPI(request,user):
       
             userRole = models.UserRole.objects.get(id=user)
 
-            url = 'https://api-preproduction.signzy.app/api/v3/phonekyc/phone-prefill-v2'
-            headers = {
-                'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
-                'Content-Type': 'application/json'
-            }
-
-            payload = {
-                "mobileNumber": userRole.user.mobile,
-                "consent": {
-                    "consentFlag": True,
-                    "consentTimestamp": 17000,
-                    "consentIpAddress": "684D:1111:222:3333:4444:5555:6:77",
-                    "consentMessageId": "CM_1"
-                }
-            }
-
-            response = requests.post(url, headers=headers, json=payload)
-            response_data = response.json()
-            if response.status_code == 200:
-                response_info = response_data['response']
-                
-                alternate_phone_numbers = [phone['phoneNumber'] for phone in response_info['alternatePhone']]
-                alternate_phone = next((phone for phone in alternate_phone_numbers if phone != userRole.user.mobile), None)
-
-                email = response_info['email'][0]['email'] if response_info['email'] else None
-
-                addresses = response_info['address'][:2]
-                address1 = addresses[0] if len(addresses) > 0 else None
-                address2 = addresses[1] if len(addresses) > 1 else None
-
-                pan_card_number = response_info['PAN'][0]['IdNumber'] if response_info['PAN'] else None
-
-                first_name = response_info['name']['firstName'] if 'name' in response_info and 'firstName' in response_info['name'] else None
-                last_name = response_info['name']['lastName'] if 'name' in response_info and 'lastName' in response_info['name'] else None
-
-                state = response_info['address'][0]['State'] if response_info['address'] else None
-                postal_code = response_info['address'][0]['Postal'] if response_info['address'] else None
-
-                prefill_data = {
-                    "alternatePhone": alternate_phone,
-                    "email": email,
-                    "address1": address1,
-                    "address2": address2,
-                    "panCardNumber": pan_card_number,
-                    "firstName": first_name,
-                    "lastName": last_name,
-                    "state": state,
-                    "postalCode": postal_code
+            if userRole.role == "Individual":
+                url = 'https://api-preproduction.signzy.app/api/v3/phonekyc/phone-prefill-v2'
+                headers = {
+                    'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
+                    'Content-Type': 'application/json'
                 }
 
-                return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
-            # return JsonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
-            return JsonResponse({"prefillData": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
+                payload = {
+                    "mobileNumber": userRole.user.mobile,
+                    "consent": {
+                        "consentFlag": True,
+                        "consentTimestamp": 17000,
+                        "consentIpAddress": "684D:1111:222:3333:4444:5555:6:77",
+                        "consentMessageId": "CM_1"
+                    }
+                }
+
+                response = requests.post(url, headers=headers, json=payload)
+                response_data = response.json()
+                if response.status_code == 200:
+                    response_info = response_data['response']
+                    
+                    alternate_phone_numbers = [phone['phoneNumber'] for phone in response_info['alternatePhone']]
+                    alternate_phone = next((phone for phone in alternate_phone_numbers if phone != userRole.user.mobile), None)
+
+                    email = response_info['email'][0]['email'] if response_info['email'] else None
+
+                    addresses = response_info['address'][:2]
+                    address1 = addresses[0] if len(addresses) > 0 else None
+                    address2 = addresses[1] if len(addresses) > 1 else None
+
+                    pan_card_number = response_info['PAN'][0]['IdNumber'] if response_info['PAN'] else None
+
+                    first_name = response_info['name']['firstName'] if 'name' in response_info and 'firstName' in response_info['name'] else None
+                    last_name = response_info['name']['lastName'] if 'name' in response_info and 'lastName' in response_info['name'] else None
+
+                    state = response_info['address'][0]['State'] if response_info['address'] else None
+                    postal_code = response_info['address'][0]['Postal'] if response_info['address'] else None
+
+                    prefill_data = {
+                        "alternatePhone": alternate_phone,
+                        "email": email,
+                        "address1": address1,
+                        "address2": address2,
+                        "panCardNumber": pan_card_number,
+                        "firstName": first_name,
+                        "lastName": last_name,
+                        "state": state,
+                        "postalCode": postal_code
+                    }
+
+                    return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
+                # return J  sonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
+                return JsonResponse({"prefillData": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
+            # else :
+            #     url = 'https://api-preproduction.signzy.app/api/v3/gstn/gstndetailed'
+            #     headers = {
+            #         'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
+            #         'Content-Type': 'application/json'
+            #     }
+            #     payload = {
+            #         "gstin" : "25AAECJ4213B1Z8",
+            #         "returnFilingFrequency" : True
+            #     }
+            #     response = requests.post(url, headers=headers, json=payload)
+            #     response_data = response.json()
+            #     if response.status_code == 200:
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
         except Exception as e:
@@ -719,8 +733,9 @@ def GetSellPurchaseDetailsAPI(request, user):
                 # not posted for sale
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer,post_for_saleID__isnull=True)
                 buyer_units_count = buyer_units.count()
-                brought_invoice = buyer_units.first().unitID.invoice 
-                if buyer_units_count:
+                print("buyer_units_count : ",buyer_units_count)
+                if buyer_units_count > 0:
+                    brought_invoice = buyer_units.first().unitID.invoice 
                     invoice_data = {
                         'id': brought_invoice.id,
                         'Invoice_id': brought_invoice.invoice_id,
@@ -742,50 +757,58 @@ def GetSellPurchaseDetailsAPI(request, user):
                         'type': 'Brought'
                     }
                     invoice_data_list.append(invoice_data)
+
+                print("invoice_data_list : ",invoice_data_list)
                 
                 # posted for sale
                 buyer_units_posted_for_sale = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer, post_for_saleID__isnull=False)
                 print("buyer_units_posted_for_sale.count() :",buyer_units_posted_for_sale.count())
-
-                if buyer_units_posted_for_sale.count():
+                buyer_units_posted_for_sale_count = buyer_units_posted_for_sale.count()
+                if buyer_units_posted_for_sale_count > 0:
+                    print("bjcvdsuj")
                     # Group the units by post_for_saleID
                     units_by_post_for_sale = defaultdict(list)
                     for unit in buyer_units_posted_for_sale:
                         units_by_post_for_sale[unit.post_for_saleID].append(unit)
+                    print("post_invoice")
+                    first_unit = buyer_units_posted_for_sale.first()
+                    if first_unit:
+                        post_invoice = first_unit.unitID.invoice
+                        print("post_invoice:", post_invoice)
 
-                    post_invoice = buyer_units_posted_for_sale.first().unitID.invoice
-
-                    # Iterate through each group
-                    for post_for_saleID, units in units_by_post_for_sale.items():
-                        if units:
-                            # Fetch the post_for_sale object to access its fields
-                            post_for_sale = models.Post_for_sale.objects.get(id=post_for_saleID.id)
-                            invoice_data = {
-                                'id': post_invoice.id,
-                                'Invoice_id': post_invoice.invoice_id,
-                                'Invoice_primary_id': post_invoice.primary_invoice_id,
-                                'Buyer_id': buyer.id,
-                                'Buyer_user_id': buyer.user_id.id,
-                                'post_for_saleID': post_for_saleID.id,
-                                'Posted_no_of_units': post_for_sale.no_of_units,
-                                'Posted_remaining_units': post_for_sale.remaining_units,
-                                'Posted_per_unit_price': post_for_sale.per_unit_price,
-                                'Posted_total_price': post_for_sale.total_price,
-                                'Posted_from_date': post_for_sale.from_date,
-                                'Posted_to_date': post_for_sale.to_date,
-                                'Invoice_name': post_invoice.product_name,
-                                'Buyer_Purchased_date': buyer.purchase_date,
-                                'Buyer_Purchased_time': buyer.purchase_time,
-                                'Invoice_interest': post_invoice.interest,
-                                'Invoice_xirr': post_invoice.xirr,
-                                'Invoice_irr': post_invoice.irr,
-                                'Invoice_tenure_in_days': post_invoice.tenure_in_days,
-                                'Invoice_expiration_time': post_invoice.expiration_time,
-                                'isAdmin': buyer.user_id.user.is_admin,
-                                'type': 'PostedForSale'
-                            }
-                            invoice_data_list.append(invoice_data)
-            
+                        # Iterate through each group
+                        for post_for_saleID, units in units_by_post_for_sale.items():
+                            if units:
+                                # Fetch the post_for_sale object to access its fields
+                                post_for_sale = models.Post_for_sale.objects.get(id=post_for_saleID.id)
+                                invoice_data = {
+                                    'id': post_invoice.id,
+                                    'Invoice_id': post_invoice.invoice_id,
+                                    'Invoice_primary_id': post_invoice.primary_invoice_id,
+                                    'Buyer_id': buyer.id,
+                                    'Buyer_user_id': buyer.user_id.id,
+                                    'post_for_saleID': post_for_saleID.id,
+                                    'Posted_no_of_units': post_for_sale.no_of_units,
+                                    'Posted_remaining_units': post_for_sale.remaining_units,
+                                    'Posted_per_unit_price': post_for_sale.per_unit_price,
+                                    'Posted_total_price': post_for_sale.total_price,
+                                    'Posted_from_date': post_for_sale.from_date,
+                                    'Posted_to_date': post_for_sale.to_date,
+                                    'Invoice_name': post_invoice.product_name,
+                                    'Buyer_Purchased_date': buyer.purchase_date,
+                                    'Buyer_Purchased_time': buyer.purchase_time,
+                                    'Invoice_interest': post_invoice.interest,
+                                    'Invoice_xirr': post_invoice.xirr,
+                                    'Invoice_irr': post_invoice.irr,
+                                    'Invoice_tenure_in_days': post_invoice.tenure_in_days,
+                                    'Invoice_expiration_time': post_invoice.expiration_time,
+                                    'isAdmin': buyer.user_id.user.is_admin,
+                                    'type': 'PostedForSale'
+                                }
+                                invoice_data_list.append(invoice_data)
+                else :
+                    print("dnkesbnzfvk")
+                    pass
             return JsonResponse({"invoices": invoice_data_list , "user" : userRole.id}, status=200)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
