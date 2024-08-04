@@ -23,6 +23,7 @@ def GenerateOtpAPI(request):
                 return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
 
             url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
+            
             headers = {
                 'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
                 'Content-Type': 'application/json'
