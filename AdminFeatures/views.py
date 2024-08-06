@@ -161,7 +161,6 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                 fractionalized_invoice_data = models.Post_for_sale.objects.filter(
                     Q(user_id__user__is_superadmin=True) | Q(user_id__user__is_admin=True)
                 )
-
                 response_data = []
                 for post in fractionalized_invoice_data:
                     invoice = post.invoice_id
@@ -294,51 +293,52 @@ def PostInvoiceAPI(request):
             
             if not user_role.user.is_admin:
                 return JsonResponse({"message":"For this operation you have to be admin","user":user_role.id},status=400)
-        
-            try:
-                configure = models.Configurations.objects.get(id=configureID)  
-                if configure.remaining_units < no_of_units:
-                    return JsonResponse({"message" : "Not sufficient units for selling","user":user_role.id},status=400)
-                post_for_sale = models.Post_for_sale.objects.create(
-                    no_of_units = no_of_units ,
-                    per_unit_price = per_unit_price ,
-                    user_id = user_role ,
-                    invoice_id = configure.invoice_id ,
-                    total_price = total_price,
-                    remaining_units = no_of_units ,
-                    withdrawn = False ,
-                    post_time = timezone.now().time() ,
-                    post_date = timezone.now().date(),
-                    from_date = from_date ,
-                    to_date = to_date ,
-                    post_dateTime = timezone.now() ,
-                    configurationID = configure ,
-                    is_admin =  user_role.user.is_admin
-                )
-                fractional_units = models.FractionalUnits.objects.filter(
-                    posted_for_sale=True,
-                    invoice=configure.invoice_id,
-                    configurationID=configure,
-                    current_owner__isnull=True
-                )[:no_of_units]
-
-                if fractional_units.count() < no_of_units:
-                    return JsonResponse({"message": "Not enough fractional units available"}, status=400)
-
-                for unit in fractional_units:
-                    models.Post_For_Sale_UnitTracker.objects.create(
-                        unitID=unit,
-                        post_for_saleID=post_for_sale,
-                        sellersID=None  
+    
+            with transaction.atomic():
+                try:
+                    configure = models.Configurations.objects.get(id=configureID)  
+                    if configure.remaining_units < no_of_units:
+                        return JsonResponse({"message" : "Not sufficient units for selling","user":user_role.id},status=400)
+                    post_for_sale = models.Post_for_sale.objects.create(
+                        no_of_units = no_of_units ,
+                        per_unit_price = per_unit_price ,
+                        user_id = user_role ,
+                        invoice_id = configure.invoice_id ,
+                        total_price = total_price,
+                        remaining_units = no_of_units ,
+                        withdrawn = False ,
+                        post_time = timezone.now().time() ,
+                        post_date = timezone.now().date(),
+                        from_date = from_date ,
+                        to_date = to_date ,
+                        post_dateTime = timezone.now() ,
+                        configurationID = configure ,
+                        is_admin =  user_role.user.is_admin
                     )
-                    unit.posted_for_sale = True
-                    unit.save()
+                    fractional_units = models.FractionalUnits.objects.filter(
+                        posted_for_sale=False,
+                        invoice=configure.invoice_id,
+                        configurationID=configure,
+                        current_owner__isnull=True
+                    )[:no_of_units]
 
-                configure.remaining_units -= no_of_units
-                configure.save()
-                return JsonResponse({"message": "Successfully posted for sale", "posted_for_saleID": post_for_sale.id , 'invoice_id' : post_for_sale.invoice_id.id,"user":user_role.id}, status=201)
-            except models.Configurations.DoesNotExist:
-                 return JsonResponse({"message":"Configuration does not exist" , "user":user_role.id},status=400)   
+                    if fractional_units.count() < no_of_units:
+                        return JsonResponse({"message": "Not enough fractional units available"}, status=400)
+
+                    for unit in fractional_units:
+                        models.Post_For_Sale_UnitTracker.objects.create(
+                            unitID=unit,
+                            post_for_saleID=post_for_sale,
+                            sellersID=None  
+                        )
+                        unit.posted_for_sale = True
+                        unit.save()
+
+                    configure.remaining_units -= no_of_units
+                    configure.save()
+                    return JsonResponse({"message": "Successfully posted for sale", "posted_for_saleID": post_for_sale.id , 'invoice_id' : post_for_sale.invoice_id.id,"user":user_role.id}, status=201)
+                except models.Configurations.DoesNotExist:
+                    return JsonResponse({"message":"Configuration does not exist" , "user":user_role.id},status=400)   
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

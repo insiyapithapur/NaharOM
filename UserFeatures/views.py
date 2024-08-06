@@ -843,9 +843,16 @@ def TobuyAPI(request):
             except models.Post_for_sale.DoesNotExist:
                 return JsonResponse({"message": "postForSaleID not found"}, status=404)
             
+            print("postForSale.remaining_units : ",postForSale.remaining_units)
+            
             if postForSale.remaining_units < no_of_units:
                 return JsonResponse({"message": "Not enough units available for sale"}, status=400)
             
+            if postForSale.remaining_units == no_of_units :
+                print("jvdcsvcjs")
+                pass
+
+            print("assffghjk")
             total_price = postForSale.per_unit_price * no_of_units
 
             if buyer_wallet.OutstandingBalance < total_price:
@@ -871,10 +878,13 @@ def TobuyAPI(request):
                     sell_date_time=timezone.now()
                 )
                 
+                print("debxjk")
                 units_for_sale = models.Post_For_Sale_UnitTracker.objects.filter(
                     post_for_saleID=postForSale,
                     sellersID__isnull=True
                 ).order_by('id')[:no_of_units]
+
+                print("units_for_sale.count() :",units_for_sale.count())
 
                 if units_for_sale.count() < no_of_units:
                     return JsonResponse({"message": "Not enough units available for sale"}, status=400)
@@ -892,8 +902,6 @@ def TobuyAPI(request):
                         unitID=unit.unitID,
                         sellersID=sales
                     )
-
-                    unit.unitID.posted_for_sale = False
                     unit.unitID.current_owner = user_role
                     unit.unitID.save()
 
