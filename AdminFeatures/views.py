@@ -157,10 +157,12 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                             "type" : "unfractionalized"
                         }
                         unfractionalized_invoices_data.append(unfractionalized_data)
+                print("unfractionalized_invoices_data : ",unfractionalized_invoices_data)
                    
                 fractionalized_invoice_data = models.Post_for_sale.objects.filter(
-                    Q(user_id__user__is_superadmin=True) | Q(user_id__user__is_admin=True)
+                    configurationID__isnull = False
                 )
+                print("fractionalized_invoice_data : ",fractionalized_invoice_data)
                 response_data = []
                 for post in fractionalized_invoice_data:
                     invoice = post.invoice_id
@@ -190,6 +192,7 @@ def InvoiceMgtAPI(request,user, primary_invoice_id=None):
                         'to_date'  : post.to_date ,
                         'type': 'fractionalized'
                     }
+                    print("post : ",post)
                     response_data.append(post_data)
 
                 all_data = response_data + configured_invoices_data + unfractionalized_invoices_data

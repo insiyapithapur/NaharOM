@@ -243,6 +243,3 @@ class SalePurchaseReport(models.Model):
     interest_due_to_seller = models.FloatField()
     TDS_deducted = models.FloatField()
     IRR = models.FloatField()
-    
-
-
