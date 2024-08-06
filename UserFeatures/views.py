@@ -848,7 +848,7 @@ def TobuyAPI(request):
 
             if buyer_wallet.OutstandingBalance < total_price:
                 return JsonResponse({"message": "Insufficient balance in buyer's wallet"}, status=400)
-            
+            print("buyer_wallet.OutstandingBalance : ",buyer_wallet.OutstandingBalance)
             with transaction.atomic():
                 buyer = models.Buyers.objects.create(
                     user_id=user_role,
@@ -891,10 +891,11 @@ def TobuyAPI(request):
                         sellersID=sales
                     )
 
-                    unit.unitID.sold = True
+                    unit.unitID.posted_for_sale = False
                     unit.unitID.current_owner = user_role
                     unit.unitID.save()
 
+                    print("ksjcbd b")
                     salespurchaseReport = models.SalePurchaseReport.objects.create(
                         invoiceID = postForSale.invoice_id ,
                         unitID = unit.unitID ,
@@ -908,13 +909,16 @@ def TobuyAPI(request):
                         TDS_deducted = ( postForSale.per_unit_price * 10 ) / 100,
                         IRR = postForSale.invoice_id.irr
                     )
+                print("dbjcksb")
                 
                 buyer_wallet.OutstandingBalance -= total_price
                 buyer_wallet.save()
-
-                seller_wallet = models.Wallet.objects.get(user_role=postForSale.user_id)
-                print("seller_wallet ,",seller_wallet.primary_bankID)
-                
+                print("bkdsbcbs")
+                try :
+                    seller_wallet = models.Wallet.objects.get(user_role=postForSale.user_id)
+                    print("seller_wallet ,",seller_wallet.primary_bankID)
+                except models.Wallet.DoesNotExist :
+                    return JsonResponse({"message": "Seller wallet is not made"},status = 500)
                 seller_wallet.OutstandingBalance += total_price
                 seller_wallet.save()
 

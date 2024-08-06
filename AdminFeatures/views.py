@@ -316,7 +316,7 @@ def PostInvoiceAPI(request):
                     is_admin =  user_role.user.is_admin
                 )
                 fractional_units = models.FractionalUnits.objects.filter(
-                    posted_for_sale=False,
+                    posted_for_sale=True,
                     invoice=configure.invoice_id,
                     configurationID=configure,
                     current_owner__isnull=True

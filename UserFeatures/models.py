@@ -181,6 +181,7 @@ class Post_for_sale(models.Model):
   configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE,null=True, blank=True)
   is_admin =  models.BooleanField()
 
+# one to one with wallet
 class Buyers(models.Model):
     user_id = models.ForeignKey(UserRole, on_delete=models.CASCADE)
     # invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE)
@@ -192,6 +193,7 @@ class Buyers(models.Model):
     purchase_time = models.TimeField(default=timezone.now())
     purchase_date_time = models.DateTimeField(default=timezone.now())
 
+# One to one relation of all fields
 class Buyer_UnitsTracker(models.Model):
     buyer_id = models.ForeignKey(Buyers,on_delete=models.CASCADE)
     unitID = models.ForeignKey(FractionalUnits , on_delete=models.CASCADE)
@@ -210,6 +212,7 @@ class Post_For_Sale_UnitTracker(models.Model):
     post_for_saleID = models.ForeignKey(Post_for_sale, on_delete=models.CASCADE)
     sellersID = models.ForeignKey(Sales,on_delete=models.CASCADE,null=True,default=None)
 
+# unitID is one to one
 class Sales_UnitTracker(models.Model):
     unitID = models.ForeignKey(FractionalUnits,on_delete=models.CASCADE)
     sellersID = models.ForeignKey(Sales,on_delete=models.CASCADE,null=True,default=None)
