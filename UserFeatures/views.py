@@ -700,13 +700,14 @@ def Credit_FundsAPI(request):
                 Balancetransaction = models.WalletTransaction.objects.create(
                         wallet=wallet,
                         transaction_id=uuid.uuid4(),
-                        type='Credited',
+                        type='fund',
                         creditedAmount=amount,
                         debitedAmount=None,
                         status='response',
                         source='bank_to_wallet',
                         purpose='Funds added to wallet',
-                        from_bank_acc=wallet.primary_bankID,
+                        from_bank_acc = wallet.primary_bankID,
+                        to_wallet = wallet,
                         invoice=None,
                         time_date=timezone.now()
                     )
@@ -768,13 +769,14 @@ def Withdraw_FundsAPI(request , user):
                 Balancetransaction = models.WalletTransaction.objects.create(
                         wallet=wallet,
                         transaction_id=uuid.uuid4(),
-                        type='Debited',
+                        type='Withdraw',
                         creditedAmount=None,
                         debitedAmount=amount,
                         status='response',
                         source='wallet_to_bank',
                         purpose='Funds debited from wallet',
-                        from_bank_acc=wallet.primary_bankID,
+                        to_bank_acc = wallet.primary_bankID,
+                        from_wallet = wallet,
                         invoice=None,
                         time_date=timezone.now()
                     )
@@ -822,6 +824,8 @@ def LedgerAPI(request, user):
                     "purpose": transaction.purpose,
                     "from_bank_acc": transaction.from_bank_acc.account_number if transaction.from_bank_acc else None,
                     "to_bank_acc" :transaction.to_bank_acc.account_number if transaction.to_bank_acc else None,
+                    "from_wallet" :transaction.from_wallet.id if transaction.from_wallet else None ,
+                    "to_wallet" : transaction.to_wallet.id if transaction.to_wallet else None,
                     "invoice": transaction.invoice.product_name if transaction.invoice else None,
                     "time_date": transaction.time_date,
                 })
@@ -1098,8 +1102,8 @@ def TobuyAPI(request):
                     debitedAmount = total_price ,
                     status = 'response' ,
                     source = 'wallet_to_buy',
-                    from_bank_acc = buyer_wallet.primary_bankID,
-                    to_bank_acc = seller_wallet.primary_bankID,
+                    from_wallet = buyer_wallet,
+                    to_wallet = seller_wallet,
                     invoice = postForSale.invoice_id ,
                     time_date = timezone.now()
                 )
@@ -1111,8 +1115,8 @@ def TobuyAPI(request):
                     creditedAmount = total_price ,
                     status = 'response' ,
                     source = 'sell_to_wallet',
-                    from_bank_acc = seller_wallet.primary_bankID ,
-                    to_bank_acc = buyer_wallet.primary_bankID,
+                    from_wallet = buyer_wallet.primary_bankID ,
+                    to_wallet = seller_wallet.primary_bankID,
                     invoice = postForSale.invoice_id,
                     time_date = timezone.now()
                 )
