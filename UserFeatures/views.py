@@ -729,7 +729,7 @@ def Credit_FundsAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
-def Withdraw_FundsAPI(request , user):
+def Withdraw_FundsAPI(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
