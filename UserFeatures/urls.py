@@ -11,6 +11,7 @@ urlpatterns = [
     path('Profile/<int:user>',views.ProfileAPI), #DONE
     path('BankAccDetails/',views.BankAccDetailsAPI), #DONE
     path('Credit_Funds/',views.Credit_FundsAPI), #bank_to_wallet #DONE
+    path('Withdraw_Funds/',views.Withdraw_FundsAPI),
     path('ledger/<int:user>',views.LedgerAPI), #DONE
     path('showFunds/<int:user_role_id>',views.ShowFundsAPI),
     path('GetSellPurchaseDetails/<int:user>',views.GetSellPurchaseDetailsAPI), #DONE

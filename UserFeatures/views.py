@@ -22,28 +22,28 @@ def GenerateOtpAPI(request):
             if not country_code or not mobile_number:
                 return JsonResponse({"message": "countryCode and mobileNumber are required"}, status=400)
 
-            # url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/generateOtp'
             
-            # headers = {
-            #     'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
-            #     'Content-Type': 'application/json'
-            # }
+            headers = {
+                'Authorization': 'lWQdJDRWrlibgEbU3O53UXXQSYnQQGhF',
+                'Content-Type': 'application/json'
+            }
 
-            # payload = {
-            #     "countryCode": country_code,
-            #     "mobileNumber": mobile_number
-            # }
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number
+            }
 
-            # response = requests.post(url, headers=headers, json=payload)
+            response = requests.post(url, headers=headers, json=payload)
             # print(response.json)
-            status= 200
-            # if response.status_code == 200:
-            if status == 200:
-                # return JsonResponse({"result": response.json()}, status=200)
-                return JsonResponse({"result": {"referenceId" : "telecom_15JaOVZRiuXsoSPoqiwjSDjpDWoH5cg8"}}, status=200)
+            # status= 200
+            if response.status_code == 200:
+            # if status == 200:
+                return JsonResponse({"result": response.json()}, status=200)
+                # return JsonResponse({"result": {"referenceId" : "telecom_15JaOVZRiuXsoSPoqiwjSDjpDWoH5cg8"}}, status=200)
             else:
-                # return JsonResponse({"message": response.json()}, status=response.status_code)
-                return JsonResponse({"message": "Inavalid Number"}, status=500)
+                return JsonResponse({"message": response.json()}, status=response.status_code)
+                # return JsonResponse({"message": "Inavalid Number"}, status=500)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -67,25 +67,25 @@ def VerifyOtpAPI(request):
             if not all([country_code, mobile_number, user_role ,reference_id, otp, str(extra_fields)]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
-            # url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
-            # headers = {
-            #     'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
-            #     'Content-Type': 'application/json'
-            # }
+            url = 'https://api-preproduction.signzy.app/api/v3/phone/getNumberDetails'
+            headers = {
+                'Authorization': 'lWQdJDRWrlibgEbU3O53UXXQSYnQQGhF',
+                'Content-Type': 'application/json'
+            }
 
-            # payload = {
-            #     "countryCode": country_code,
-            #     "mobileNumber": mobile_number,
-            #     "referenceId": reference_id,
-            #     "otp": otp,
-            #     "extraFields": extra_fields
-            # }
+            payload = {
+                "countryCode": country_code,
+                "mobileNumber": mobile_number,
+                "referenceId": reference_id,
+                "otp": otp,
+                "extraFields": extra_fields
+            }
 
-            # response = requests.post(url, headers=headers, json=payload)
-            status_code = 200
+            response = requests.post(url, headers=headers, json=payload)
+            # status_code = 200
             with transaction.atomic():
-                # if response.status_code == 200:
-                if status_code == 200:
+                if response.status_code == 200:
+                # if status_code == 200:
                     try:
                         user = models.User.objects.get(mobile = mobile_number)
                         userRole = models.UserRole.objects.get(user = user)
@@ -93,7 +93,7 @@ def VerifyOtpAPI(request):
                             return JsonResponse({"message":"user role is not match"},status=400)
                         return JsonResponse({
                                 "message": "User already registered",
-                                # "signzy_Response" : response.json(),
+                                "signzy_Response" : response.json(),
                                 "user": userRole.id,
                                 "user_role" : userRole.role,
                                 "is_admin" : userRole.user.is_admin,
@@ -111,7 +111,7 @@ def VerifyOtpAPI(request):
                             )
                             return JsonResponse({
                                 "message": "User registered successfully",
-                                # "signzy_Response" : response.json(),
+                                "signzy_Response" : response.json(),
                                 "user": userRole.id,
                                 "user_role" : userRole.role,
                                 "is_admin" : userRole.user.is_admin,
@@ -123,7 +123,7 @@ def VerifyOtpAPI(request):
                             return JsonResponse({"message":"user role is not match"},status=400)
                         return JsonResponse({
                                 "message": "User already registered",
-                                # "signzy_Response" : response.json(),
+                                "signzy_Response" : response.json(),
                                 "user": userRole.id,
                                 "user_role" : userRole.role,
                                 "is_admin" : userRole.user.is_admin,
@@ -132,8 +132,8 @@ def VerifyOtpAPI(request):
                     except Exception as e:
                         return JsonResponse({"message": str(e)}, status=500)
                 else:
-                    # return JsonResponse({"message": response.json()}, status=response.status_code)
-                    return JsonResponse({"message": "signzy"}, status=500)
+                    return JsonResponse({"message": response.json()}, status=response.status_code)
+                    # return JsonResponse({"message": "signzy"}, status=500)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -159,6 +159,11 @@ def verifyStatusAPI(request,user):
                     is_KYC = False
                 if BankAcc_Details_exist :
                     is_BankDetailsExists = True
+                    try :
+                        wallet = models.Wallet.objects.get(user_role=userRole)
+                        OutstandingBalance = wallet.OutstandingBalance
+                    except :
+                        OutstandingBalance = 0
                 else :
                     is_BankDetailsExists = False
 
@@ -171,10 +176,22 @@ def verifyStatusAPI(request,user):
                     is_KYC = False
                 if BankAcc_Details_exist :
                     is_BankDetailsExists = True
+                    try :
+                        wallet = models.Wallet.objects.get(user_role=userRole)
+                        OutstandingBalance = wallet.OutstandingBalance
+                    except :
+                        OutstandingBalance = 0
                 else :
                     is_BankDetailsExists = False
 
-            return JsonResponse({"is_KYC": is_KYC , "is_BankDetailsExists":is_BankDetailsExists,"user": userRole.id  , 'user_role' : userRole.role , 'phone' : userRole.user.mobile ,"is_admin" : str(userRole.user.is_admin) , "is_superAdmin" : str(userRole.user.is_superadmin) },status=200)
+            return JsonResponse({"is_KYC": is_KYC , 
+                                 "is_BankDetailsExists":is_BankDetailsExists,
+                                 "user": userRole.id  , 
+                                 'user_role' : userRole.role , 
+                                 'phone' : userRole.user.mobile ,
+                                 "is_admin" : str(userRole.user.is_admin) , 
+                                 "is_superAdmin" : str(userRole.user.is_superadmin),
+                                 "OutstandingBalance" : OutstandingBalance },status=200)
         
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
@@ -195,7 +212,7 @@ def phonetoPrefillAPI(request,user):
             if userRole.role == "Individual":
                 url = 'https://api-preproduction.signzy.app/api/v3/phonekyc/phone-prefill-v2'
                 headers = {
-                    'Authorization': 'ND2E2FqLLKa3D9AcMmvNsuwkD5zeAfHO',
+                    'Authorization': 'lWQdJDRWrlibgEbU3O53UXXQSYnQQGhF',
                     'Content-Type': 'application/json'
                 }
 
@@ -243,22 +260,97 @@ def phonetoPrefillAPI(request,user):
                         "postalCode": postal_code
                     }
 
-                    return JsonResponse({"prefillData": prefill_data,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
+                    return JsonResponse({"prefillData": prefill_data,
+                                         "user" : userRole.id,
+                                         "phoneNumber":userRole.user.mobile}, status=200)
                 # return J  sonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
                 return JsonResponse({"prefillData": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
-            # else :
-            #     url = 'https://api-preproduction.signzy.app/api/v3/gstn/gstndetailed'
-            #     headers = {
-            #         'Authorization': '34a0GzKikdWkAHuTY2rQsOvDZIZgrODz',
-            #         'Content-Type': 'application/json'
-            #     }
-            #     payload = {
-            #         "gstin" : "25AAECJ4213B1Z8",
-            #         "returnFilingFrequency" : True
-            #     }
-            #     response = requests.post(url, headers=headers, json=payload)
-            #     response_data = response.json()
-            #     if response.status_code == 200:
+            else :
+                data = json.loads(request.body)
+                gstin = data.get('gstin')
+
+                try :
+                    gstin_check = models.GSTIN_Nos.objects.get(user_role = userRole)
+                    return JsonResponse({"message": "already GSTIN no is there",
+                                         "user" : userRole.id,
+                                         "phoneNumber":userRole.user.mobile,
+                                         "GSTIN" : gstin_check.GSTIN_no,
+                                         "GSTIN_ID" : gstin_check.id}, status=200)
+                except models.GSTIN_Nos.DoesNotExist:
+                    with transaction.atomic():
+                        gstin = models.GSTIN_Nos.objects.create(
+                            user_role = userRole ,
+                            GSTIN_no = gstin ,
+                            created_at = timezone.now()
+                        )
+                        url = 'https://api-preproduction.signzy.app/api/v3/gst/search'
+
+                        headers = {
+                            'Authorization': 'lWQdJDRWrlibgEbU3O53UXXQSYnQQGhF',
+                            'Content-Type': 'application/json'
+                        }
+                        payload = {
+                            "gstin" : gstin,
+                            "returnFilingFrequency" : True
+                        }
+                        response = requests.post(url, headers=headers, json=payload)
+                        response_data = response.json()
+                        if response.status_code == 200:
+
+                            gstn_detailed = data['result']['gstnDetailed']
+                            gstn_records = data['result']['gstnRecords'][0]
+
+                            legal_name_of_business = gstn_detailed.get('legalNameOfBusiness', '')
+                            trade_name_of_business = gstn_detailed.get('tradeNameOfBusiness', '')
+                            principal_place_address = gstn_detailed.get('principalPlaceAddress', '')
+                            additional_place_address = gstn_detailed.get('additionalPlaceAddress', '')
+
+                            principal_place_split_address = gstn_detailed.get('principalPlaceSplitAddress', {})
+                            principal_state = principal_place_split_address.get('state', [['']])[0][0]
+                            principal_city = principal_place_split_address.get('city', [''])[0]
+                            principal_pincode = principal_place_split_address.get('pincode', '')
+
+                            additional_place_split_address = gstn_detailed.get('additionalPlaceSplitAddress', {})
+                            additional_state = additional_place_split_address.get('state', [['']])[0][0]
+                            additional_city = additional_place_split_address.get('city', [''])[0]
+                            additional_pincode = additional_place_split_address.get('pincode', '')
+
+                            email_id = gstn_records.get('emailId', '')
+                            mob_num = gstn_records.get('mobNum', '')
+
+                            # Printing the extracted values
+                            print(f"Legal Name of Business: {legal_name_of_business}")
+                            print(f"Trade Name of Business: {trade_name_of_business}")
+                            print(f"Principal Place Address: {principal_place_address}")
+                            print(f"Additional Place Address: {additional_place_address}")
+                            print(f"Principal State: {principal_state}")
+                            print(f"Principal City: {principal_city}")
+                            print(f"Principal Pincode: {principal_pincode}")
+                            print(f"Additional State: {additional_state}")
+                            print(f"Additional City: {additional_city}")
+                            print(f"Additional Pincode: {additional_pincode}")
+                            print(f"Email ID: {email_id}")
+                            print(f"Mobile Number: {mob_num}")
+
+                            prefill_data = {
+                                "company_name" : legal_name_of_business,
+                                "address1" :  principal_place_address ,
+                                "address2" : additional_place_address ,
+                                "city" : principal_city ,
+                                "state" : additional_state ,
+                                "postalCode" : principal_pincode ,
+                                "alternate_phone_no" : mob_num ,
+                                "public_url_company" : None ,
+                                "email": email,
+                                "panCardNumber": None
+                            }
+
+                            return JsonResponse({"prefillData": prefill_data ,
+                                                "user" : userRole.id,
+                                                "phoneNumber":userRole.user.mobile}, status=200)
+                        return JsonResponse({"prefillData": None ,
+                                         "user" : userRole.id,
+                                         "phoneNumber":userRole.user.mobile}, status=200)
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
         except Exception as e:
@@ -635,6 +727,74 @@ def Credit_FundsAPI(request):
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
+@csrf_exempt
+def Withdraw_FundsAPI(request , user):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_role_id = data.get('user')
+            primary_BankAccID = data.get('primary_BankAccID')
+            amount = data.get('amount')
+
+            if not user_role_id or not primary_BankAccID or not amount:
+                return JsonResponse({"message": "user_role_id, bank_acc_id, and amount are required"}, status=400)
+
+            try:
+                user_role = models.UserRole.objects.get(id=user_role_id)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found"}, status=404)
+
+            try:
+                bank_account = models.BankAccountDetails.objects.get(id=primary_BankAccID, user_role=user_role)
+            except models.BankAccountDetails.DoesNotExist:
+                return JsonResponse({"message": "Bank account not found for the given user role"}, status=404)
+            
+            with transaction.atomic():
+                try:
+                    if bank_account.id != primary_BankAccID:
+                        return JsonResponse({"message":"primary_BankAccID is wrong"},status = 400)
+                    wallet = models.Wallet.objects.get(user_role=user_role,primary_bankID=bank_account)
+                    wallet.OutstandingBalance -= amount
+                    wallet.updated_at = timezone.now().date()
+                    wallet.save()
+                except models.Wallet.DoesNotExist:
+                    wallet = models.Wallet.objects.create(
+                        user_role=user_role,
+                        primary_bankID=bank_account,
+                        OutstandingBalance=amount,
+                        updated_at=timezone.now().date()
+                    )
+
+                Balancetransaction = models.WalletTransaction.objects.create(
+                        wallet=wallet,
+                        transaction_id=uuid.uuid4(),
+                        type='Debited',
+                        creditedAmount=None,
+                        debitedAmount=amount,
+                        status='response',
+                        source='wallet_to_bank',
+                        purpose='Funds debited from wallet',
+                        from_bank_acc=wallet.primary_bankID,
+                        invoice=None,
+                        time_date=timezone.now()
+                    )
+
+                return JsonResponse({
+                        "message": "Funds debited successfully",
+                        "user" :user_role.id,
+                        "wallet_balance": wallet.OutstandingBalance,
+                        "primary_BankAccID" : wallet.primary_bankID.id,
+                        "primary_BankAccNo" : wallet.primary_bankID.account_number,
+                        "transaction_id": Balancetransaction.transaction_id
+                }, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+    
 @csrf_exempt
 def LedgerAPI(request, user):
     if request.method == 'GET':

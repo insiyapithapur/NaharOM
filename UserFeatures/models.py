@@ -87,6 +87,11 @@ class PanCardNos(models.Model):
     pan_card_no = models.CharField(max_length=20)
     created_at = models.DateTimeField(default=timezone.now())
 
+class GSTIN_Nos(models.Model):
+    user_role = models.OneToOneField(UserRole, on_delete=models.CASCADE)
+    GSTIN_no = models.CharField(max_length=20)
+    created_at = models.DateTimeField(default=timezone.now())
+
 class BankAccountDetails(models.Model):
     user_role = models.ForeignKey(UserRole, on_delete=models.CASCADE)
     account_number = models.BigIntegerField(unique=True)
@@ -226,8 +231,10 @@ class WalletTransaction(models.Model):
     status = models.CharField(max_length=50, choices=[('initiated', 'Initiated'), ('processing', 'Processing'), ('response', 'Response')])
     source = models.CharField(max_length=50, choices=[('bank_to_wallet', 'Bank to Wallet'), ('wallet_to_bank', 'Wallet to Bank'), ('wallet_to_buy', 'Wallet to Buy'), ('sell_to_wallet', 'Sell to Wallet')])
     purpose = models.CharField(max_length=255 , null=True)
-    from_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='from_bank_transactions')
-    to_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='to_bank_transactions')
+    from_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='from_bank_transactions') #credit/debit from another bank
+    to_bank_acc = models.ForeignKey(BankAccountDetails, on_delete=models.CASCADE , null=True,related_name='to_bank_transactions') #credit/debit from another bank
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE , null=True,related_name='from_wallet')
+    to_Wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE , null=True,related_name='to_wallet')
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE , null=True)
     time_date = models.DateTimeField()
 
