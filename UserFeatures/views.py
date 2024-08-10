@@ -166,6 +166,7 @@ def verifyStatusAPI(request,user):
                         OutstandingBalance = 0
                 else :
                     is_BankDetailsExists = False
+                    OutstandingBalance = 0
 
             elif userRole.role == 'Company' :
                 Company_Detials_exist = models.CompanyDetails.objects.filter(user_role=userRole).exists()
@@ -183,6 +184,7 @@ def verifyStatusAPI(request,user):
                         OutstandingBalance = 0
                 else :
                     is_BankDetailsExists = False
+                    OutstandingBalance = 0
 
             return JsonResponse({"is_KYC": is_KYC , 
                                  "is_BankDetailsExists":is_BankDetailsExists,
