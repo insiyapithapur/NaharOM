@@ -665,10 +665,9 @@ def Credit_FundsAPI(request):
         try:
             data = json.loads(request.body)
             user_role_id = data.get('user')
-            primary_BankAccID = data.get('primary_BankAccID')
             amount = data.get('amount')
 
-            if not user_role_id or not primary_BankAccID or not amount:
+            if not user_role_id  or not amount:
                 return JsonResponse({"message": "user_role_id, bank_acc_id, and amount are required"}, status=400)
 
             try:
@@ -677,25 +676,17 @@ def Credit_FundsAPI(request):
                 return JsonResponse({"message": "User role not found"}, status=400)
 
             try:
-                bank_account = models.BankAccountDetails.objects.get(id=primary_BankAccID, user_role=user_role)
+                wallet = models.Wallet.objects.get(user_role=user_role)
             except models.BankAccountDetails.DoesNotExist:
-                return JsonResponse({"message": "Bank account not found for the given user role"}, status=400)
+                return JsonResponse({"message": " Wallet not found for the given user"}, status=400)
             
             with transaction.atomic():
                 try:
-                    if bank_account.id != primary_BankAccID:
-                        return JsonResponse({"message":"primary_BankAccID is wrong"},status = 400)
-                    wallet = models.Wallet.objects.get(user_role=user_role,primary_bankID=bank_account)
                     wallet.OutstandingBalance += amount
                     wallet.updated_at = timezone.now().date()
                     wallet.save()
                 except models.Wallet.DoesNotExist:
-                    wallet = models.Wallet.objects.create(
-                        user_role=user_role,
-                        primary_bankID=bank_account,
-                        OutstandingBalance=amount,
-                        updated_at=timezone.now().date()
-                    )
+                    return JsonResponse({"message": " Wallet not found for the given user"}, status=400)
 
                 Balancetransaction = models.WalletTransaction.objects.create(
                         wallet=wallet,
