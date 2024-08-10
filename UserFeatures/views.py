@@ -561,7 +561,7 @@ def ProfileAPI(request,user=None):
                         "alternate_phone_no": individual_details.alternate_phone_no,
                     }
                 except models.IndividualDetails.DoesNotExist:
-                    return JsonResponse({"message": "Individual profile not found"}, status=404)
+                    return JsonResponse({"message": "Individual profile not found"}, status=400)
 
             elif user_role.role == 'Company':
                 try:
@@ -577,7 +577,7 @@ def ProfileAPI(request,user=None):
                         "public_url_company": company_details.public_url_company,
                     }
                 except models.CompanyDetails.DoesNotExist:
-                    return JsonResponse({"message": "Company profile not found"}, status=404)
+                    return JsonResponse({"message": "Company profile not found"}, status=400)
 
             return JsonResponse(response_data, status=200)
         except models.UserRole.DoesNotExist:
@@ -598,7 +598,7 @@ def BankAccDetailsAPI(request):
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                return JsonResponse({"message": "User role not found"}, status=400)
 
             try:
                 # following details will come from 3rd party api
@@ -674,12 +674,12 @@ def Credit_FundsAPI(request):
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                return JsonResponse({"message": "User role not found"}, status=400)
 
             try:
                 bank_account = models.BankAccountDetails.objects.get(id=primary_BankAccID, user_role=user_role)
             except models.BankAccountDetails.DoesNotExist:
-                return JsonResponse({"message": "Bank account not found for the given user role"}, status=404)
+                return JsonResponse({"message": "Bank account not found for the given user role"}, status=400)
             
             with transaction.atomic():
                 try:
@@ -734,37 +734,30 @@ def Withdraw_FundsAPI(request):
         try:
             data = json.loads(request.body)
             user_role_id = data.get('user')
-            primary_BankAccID = data.get('primary_BankAccID')
             amount = data.get('amount')
 
-            if not user_role_id or not primary_BankAccID or not amount:
-                return JsonResponse({"message": "user_role_id, bank_acc_id, and amount are required"}, status=400)
+            if not user_role_id  or not amount:
+                return JsonResponse({"message": "user and amount are required"}, status=400)
 
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                return JsonResponse({"message": "User not found"}, status=400)
 
             try:
-                bank_account = models.BankAccountDetails.objects.get(id=primary_BankAccID, user_role=user_role)
+                wallet = models.Wallet.objects.get(user_role=user_role)
             except models.BankAccountDetails.DoesNotExist:
-                return JsonResponse({"message": "Bank account not found for the given user role"}, status=404)
+                return JsonResponse({"message": " Wallet not found for the given user"}, status=400)
             
             with transaction.atomic():
                 try:
-                    if bank_account.id != primary_BankAccID:
-                        return JsonResponse({"message":"primary_BankAccID is wrong"},status = 400)
-                    wallet = models.Wallet.objects.get(user_role=user_role,primary_bankID=bank_account)
+                    if wallet.OutstandingBalance < amount:
+                        return JsonResponse({"message": "Not sufficient amount to do withdrawal"}, status=400)
                     wallet.OutstandingBalance -= amount
                     wallet.updated_at = timezone.now().date()
                     wallet.save()
                 except models.Wallet.DoesNotExist:
-                    wallet = models.Wallet.objects.create(
-                        user_role=user_role,
-                        primary_bankID=bank_account,
-                        OutstandingBalance=amount,
-                        updated_at=timezone.now().date()
-                    )
+                    return JsonResponse({"message": " Wallet not found for the given user"}, status=400)
 
                 Balancetransaction = models.WalletTransaction.objects.create(
                         wallet=wallet,
@@ -804,11 +797,11 @@ def LedgerAPI(request, user):
             try:
                 user_role = models.UserRole.objects.get(id=user)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                return JsonResponse({"message": "User role not found"}, status=400)
 
             wallet = models.Wallet.objects.filter(user_role=user_role)
             if not wallet.exists():
-                return JsonResponse({"message": "No wallets found for this user role"}, status=404)
+                return JsonResponse({"message": "No wallets found for this user role"}, status=400)
 
             transactions = models.WalletTransaction.objects.filter(wallet__in=wallet).order_by('-time_date')
 
@@ -845,7 +838,7 @@ def ShowFundsAPI(request,user_role_id):
             try:
                 bank_acc = models.BankAccountDetails.objects.get(user_role = user_role_id)
             except models.BankAccountDetails.DoesNotExist:
-                return JsonResponse({"message":"User or bank account doesn't exist"},status=404)
+                return JsonResponse({"message":"User or bank account doesn't exist"},status=400)
             balance = models.OutstandingBalance.objects.get(bank_acc= bank_acc).balance
             return JsonResponse({"Balance":balance},status = 200)
         except Exception as e:
@@ -993,19 +986,19 @@ def TobuyAPI(request):
             try:
                 user_role = models.UserRole.objects.get(id=userRoleID)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User not found"}, status=404)
+                return JsonResponse({"message": "User not found"}, status=400)
 
             try:
                 # bankAcc = models.BankAccountDetails.objects.get(user_role=user_role)
                 buyer_wallet = models.Wallet.objects.get(user_role=user_role)
                 print("buyer_wallet ,",buyer_wallet.primary_bankID)
             except models.Wallet.DoesNotExist:
-                return JsonResponse({"message": "Buyer Wallet not found"}, status=404)
+                return JsonResponse({"message": "Buyer Wallet not found"}, status=400)
             
             try:
                 postForSale = models.Post_for_sale.objects.get(id=postForSaleID)
             except models.Post_for_sale.DoesNotExist:
-                return JsonResponse({"message": "postForSaleID not found"}, status=404)
+                return JsonResponse({"message": "postForSaleID not found"}, status=400)
             
             print("postForSale.remaining_units : ",postForSale.remaining_units)
             
@@ -1155,12 +1148,12 @@ def ToSellAPI(request):
             try:
                 user_role = models.UserRole.objects.get(id=userRoleID)
             except models.UserRole.DoesNotExist:
-                return JsonResponse({"message": "User role not found"}, status=404)
+                return JsonResponse({"message": "User role not found"}, status=400)
 
             try:
                 buyer = models.Buyers.objects.get(id=buyerID)
             except models.Buyers.DoesNotExist:
-                return JsonResponse({"message": "Buyer not found"}, status=404)
+                return JsonResponse({"message": "Buyer not found"}, status=400)
 
             with transaction.atomic():
 
