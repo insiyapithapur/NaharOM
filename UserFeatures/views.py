@@ -40,7 +40,7 @@ def GenerateOtpAPI(request):
             # if response.status_code == 200:
             if status == 200:
                 # return JsonResponse({"result": response.json()}, status=200)
-                return JsonResponse({"result": {"referenceId" : "telecom_15JaOVZRiuXsoSPoqiwjSDjpDWoH5cg8"}}, status=200)
+                return JsonResponse({"result": {"result" : {"referenceId" : "telecom_15JaOVZRiuXsoSPoqiwjSDjpDWoH5cg8"}}}, status=200)
             else:
                 # return JsonResponse({"message": response.json()}, status=response.status_code)
                 return JsonResponse({"message": "Inavalid Number"}, status=500)
