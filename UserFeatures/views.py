@@ -1101,8 +1101,8 @@ def TobuyAPI(request):
                     creditedAmount = total_price ,
                     status = 'response' ,
                     source = 'sell_to_wallet',
-                    from_wallet = buyer_wallet.primary_bankID ,
-                    to_wallet = seller_wallet.primary_bankID,
+                    from_wallet = buyer_wallet ,
+                    to_wallet = seller_wallet,
                     invoice = postForSale.invoice_id,
                     time_date = timezone.now()
                 )
