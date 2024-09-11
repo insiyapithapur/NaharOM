@@ -1111,7 +1111,7 @@ def TobuyAPI(request):
                 if postForSale.remaining_units == 0:
                     postForSale.sold= True
 
-            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id,"user" : user_role.id , "salespurchaseReport":salespurchaseReport.id}, status=201)        
+            return JsonResponse({"message": "Units bought successfully", "buyer_id": buyer.id,"user" : user_role.id}, status=201)        
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
