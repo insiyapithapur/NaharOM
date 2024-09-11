@@ -670,7 +670,7 @@ def Credit_FundsAPI(request):
             amount = data.get('amount')
 
             if not user_role_id  or not amount:
-                return JsonResponse({"message": "user_role_id, bank_acc_id, and amount are required"}, status=400)
+                return JsonResponse({"message": "user and amount are required"}, status=400)
 
             try:
                 user_role = models.UserRole.objects.get(id=user_role_id)
@@ -691,15 +691,17 @@ def Credit_FundsAPI(request):
                     return JsonResponse({"message": " Wallet not found for the given user"}, status=400)
 
                 Balancetransaction = models.WalletTransaction.objects.create(
-                        wallet=wallet,
+                        wallet = wallet ,
                         transaction_id=uuid.uuid4(),
-                        type='fund',
-                        creditedAmount=amount,
-                        debitedAmount=None,
-                        status='response',
-                        source='bank_to_wallet',
-                        purpose='Funds added to wallet',
-                        from_bank_acc = wallet.primary_bankID,
+                        type = "fund",
+                        creditedAmount = amount ,
+                        debitedAmount = None,
+                        status = 'response',
+                        source = 'bank_to_wallet',
+                        purpose = 'Funds added to wallet',
+                        from_bank_acc = wallet.primary_bankID ,
+                        to_bank_acc = None,
+                        from_wallet = None,
                         to_wallet = wallet,
                         invoice=None,
                         time_date=timezone.now()
