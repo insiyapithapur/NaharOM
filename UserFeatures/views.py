@@ -830,11 +830,7 @@ def LedgerAPI(request, user):
 def ShowFundsAPI(request,user_role_id):
     if request.method == 'GET':
         try:
-            try:
-                bank_acc = models.BankAccountDetails.objects.get(user_role = user_role_id)
-            except models.BankAccountDetails.DoesNotExist:
-                return JsonResponse({"message":"User or bank account doesn't exist"},status=400)
-            balance = models.OutstandingBalance.objects.get(bank_acc= bank_acc).balance
+            balance = models.Wallet.objects.get(user_role= user_role_id).OutstandingBalance
             return JsonResponse({"Balance":balance},status = 200)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
