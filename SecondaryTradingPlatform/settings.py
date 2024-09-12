@@ -88,7 +88,7 @@ WSGI_APPLICATION = 'SecondaryTradingPlatform.wsgi.application'
 
 
 # print("nas mcbxdsa",os.getenv('DATABASE_URL'))
-# print("dj database ",dj_database_url.parse(os.getenv('DATABASE_URL')))
+print("dj database ",dj_database_url.parse(os.getenv('DATABASE_URL')))
 DATABASES = {
   'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
 #   {
