@@ -26,5 +26,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('UserFeatures.urls')),
     path('appAdmin/',include('AdminFeatures.urls')),
+    path('irr/',include('IRRCalc.urls'))
 ]
 urlpatterns += staticfiles_urlpatterns()
