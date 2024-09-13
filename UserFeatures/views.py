@@ -267,98 +267,75 @@ def phonetoPrefillAPI(request,user):
                                          "phoneNumber":userRole.user.mobile}, status=200)
                 # return J  sonResponse({"message": "Failed to fetch data from API" ,"response":response.json()}, status=response.status_code)
                 return JsonResponse({"prefillData": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
-            else :
-                data = json.loads(request.body)
-                gstin = data.get('gstin')
-
-                try :
-                    gstin_check = models.GSTIN_Nos.objects.get(user_role = userRole)
-                    return JsonResponse({"message": "already GSTIN no is there",
-                                         "user" : userRole.id,
-                                         "phoneNumber":userRole.user.mobile,
-                                         "GSTIN" : gstin_check.GSTIN_no,
-                                         "GSTIN_ID" : gstin_check.id}, status=200)
-                except models.GSTIN_Nos.DoesNotExist:
-                    with transaction.atomic():
-                        gstin = models.GSTIN_Nos.objects.create(
-                            user_role = userRole ,
-                            GSTIN_no = gstin ,
-                            created_at = timezone.now()
-                        )
-                        url = 'https://api-preproduction.signzy.app/api/v3/gst/search'
-
-                        headers = {
-                            'Authorization': 'lWQdJDRWrlibgEbU3O53UXXQSYnQQGhF',
-                            'Content-Type': 'application/json'
-                        }
-                        payload = {
-                            "gstin" : gstin,
-                            "returnFilingFrequency" : True
-                        }
-                        response = requests.post(url, headers=headers, json=payload)
-                        response_data = response.json()
-                        if response.status_code == 200:
-
-                            gstn_detailed = data['result']['gstnDetailed']
-                            gstn_records = data['result']['gstnRecords'][0]
-
-                            legal_name_of_business = gstn_detailed.get('legalNameOfBusiness', '')
-                            trade_name_of_business = gstn_detailed.get('tradeNameOfBusiness', '')
-                            principal_place_address = gstn_detailed.get('principalPlaceAddress', '')
-                            additional_place_address = gstn_detailed.get('additionalPlaceAddress', '')
-
-                            principal_place_split_address = gstn_detailed.get('principalPlaceSplitAddress', {})
-                            principal_state = principal_place_split_address.get('state', [['']])[0][0]
-                            principal_city = principal_place_split_address.get('city', [''])[0]
-                            principal_pincode = principal_place_split_address.get('pincode', '')
-
-                            additional_place_split_address = gstn_detailed.get('additionalPlaceSplitAddress', {})
-                            additional_state = additional_place_split_address.get('state', [['']])[0][0]
-                            additional_city = additional_place_split_address.get('city', [''])[0]
-                            additional_pincode = additional_place_split_address.get('pincode', '')
-
-                            email_id = gstn_records.get('emailId', '')
-                            mob_num = gstn_records.get('mobNum', '')
-
-                            # Printing the extracted values
-                            print(f"Legal Name of Business: {legal_name_of_business}")
-                            print(f"Trade Name of Business: {trade_name_of_business}")
-                            print(f"Principal Place Address: {principal_place_address}")
-                            print(f"Additional Place Address: {additional_place_address}")
-                            print(f"Principal State: {principal_state}")
-                            print(f"Principal City: {principal_city}")
-                            print(f"Principal Pincode: {principal_pincode}")
-                            print(f"Additional State: {additional_state}")
-                            print(f"Additional City: {additional_city}")
-                            print(f"Additional Pincode: {additional_pincode}")
-                            print(f"Email ID: {email_id}")
-                            print(f"Mobile Number: {mob_num}")
-
-                            prefill_data = {
-                                "company_name" : legal_name_of_business,
-                                "address1" :  principal_place_address ,
-                                "address2" : additional_place_address ,
-                                "city" : principal_city ,
-                                "state" : additional_state ,
-                                "postalCode" : principal_pincode ,
-                                "alternate_phone_no" : mob_num ,
-                                "public_url_company" : None ,
-                                "email": email,
-                                "panCardNumber": None
-                            }
-
-                            return JsonResponse({"prefillData": prefill_data ,
-                                                "user" : userRole.id,
-                                                "phoneNumber":userRole.user.mobile}, status=200)
-                        return JsonResponse({"prefillData": None ,
-                                         "user" : userRole.id,
-                                         "phoneNumber":userRole.user.mobile}, status=200)
         except models.UserRole.DoesNotExist:
             return JsonResponse({"message" : "user ID does not exist"},status=400) 
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
+@csrf_exempt
+def PAN_TO_GSTAPI(request):
+    if request.method == 'POST':
+        try :
+            data = json.loads(request.body)
+            user = data.get('user')
+            PAN = data.get('pan')
+            email = data.get('email')
+            state = data.get('state')
+            userRole = models.UserRole.objects.get(id=user)
+            with transaction.atomic():
+                if userRole.role == "Company":
+                    url = 'https://api-preproduction.signzy.app/api/v3/gst/panToGstnDetail'
+                    headers = {
+                        'Authorization': '1tKetIB80fpVfLwXXbKGSKxgtvMZ3DlF',
+                        'Content-Type': 'application/json'
+                    }
+
+                    payload = {
+                        "panNumber": PAN,
+                        "state": state ,
+                        "email": email
+                    }
+
+                    response = requests.post(url, headers=headers, json=payload)
+                    response_data = response.json()
+                    if response.status_code == 200:
+                            gstn_detail = response_data['result']['gstnDetailed'][0]
+                            gstn_record = response_data['result']['gstnRecords'][0]
+
+                            trade_name = gstn_detail.get('tradeNameOfBusiness', '')
+                            principal_address = gstn_detail.get('principalPlaceAddress', '')
+                            additional_address = gstn_detail.get('additionalPlaceAddress', '')
+                            state = gstn_detail.get('principalPlaceState', '')
+                            pincode = gstn_detail.get('principalPlacePincode', '')
+                            city = gstn_detail.get('principalPlaceCity', '')
+                            mobile_number = gstn_record.get('mobNum', '')
+
+                            # Constructing the response
+                            result = {
+                                "company_name": trade_name,
+                                "addressLine1": principal_address,
+                                "addressLine2": additional_address,
+                                "state": state,
+                                "pin_no": pincode,
+                                "city": city,
+                                "alternate_phone_no": mobile_number,
+                                "public_url_company" : None ,
+                                "email" : email,
+                                "PAN" : PAN
+                            }
+
+                            return JsonResponse(result, status=200)
+                    else:
+                        return JsonResponse({"result": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
+        except models.UserRole.DoesNotExist:
+            return JsonResponse({"error": "User role not found."}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST methods is allowed"}, status=405)
+            
 
 @csrf_exempt
 def ProfileAPI(request,user=None):
@@ -515,16 +492,11 @@ def ProfileAPI(request,user=None):
                                 created_at = timezone.now() ,
                                 updated_at = timezone.now()
                             )
-
-                            try :
-                                pancards = models.PanCardNos.objects.get(user_role=user_role)
-                                return JsonResponse({"message":"pan card entery is there"},status=400)
-                            except :
-                                panCard = models.PanCardNos.objects.create(
-                                    user_role = user_role,
-                                    pan_card_no = company_pan_no ,
-                                    created_at = timezone.now()
-                                )
+                            panCard = models.PanCardNos.objects.create(
+                                user_role = user_role,
+                                pan_card_no = company_pan_no ,
+                                created_at = timezone.now()
+                            )
 
                             return JsonResponse({"message" : "Successfully entered company profile","company_ProfileID":companyProfile.id , "panCard_NumberID":panCard.id,"user" :user_role.id},status=200)
                 else :
