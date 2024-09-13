@@ -476,7 +476,7 @@ def ProfileAPI(request,user=None):
                             models.PanCardNos.objects.get(user_role=user_role)
                             return JsonResponse({"message": "PAN card already exists but company profile does not"}, status=400)
                         except models.PanCardNos.DoesNotExist:
-                            if not panCardNumber:
+                            if not company_pan_no:
                                 return JsonResponse({"message": "panCardNumber is required as it is new user"}, status=400)
                             # create
                             companyProfile = models.CompanyDetails.objects.create(
