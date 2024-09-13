@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'UserFeatures',
     'AdminFeatures',
     'corsheaders',
+    'IRRCalc',
 ]
 
 AUTH_USER_MODEL ='UserFeatures.User'

@@ -286,47 +286,50 @@ def PAN_TO_GSTAPI(request):
             userRole = models.UserRole.objects.get(id=user)
             with transaction.atomic():
                 if userRole.role == "Company":
-                    url = 'https://api-preproduction.signzy.app/api/v3/gst/panToGstnDetail'
-                    headers = {
-                        'Authorization': '1tKetIB80fpVfLwXXbKGSKxgtvMZ3DlF',
-                        'Content-Type': 'application/json'
-                    }
+                    # url = 'https://api-preproduction.signzy.app/api/v3/gst/panToGstnDetail'
+                    # headers = {
+                    #     'Authorization': '1tKetIB80fpVfLwXXbKGSKxgtvMZ3DlF',
+                    #     'Content-Type': 'application/json'
+                    # }
 
-                    payload = {
-                        "panNumber": PAN,
-                        "state": state ,
-                        "email": email
-                    }
+                    # payload = {
+                    #     "panNumber": PAN,
+                    #     "state": state ,
+                    #     "email": email
+                    # }
 
-                    response = requests.post(url, headers=headers, json=payload)
-                    response_data = response.json()
-                    if response.status_code == 200:
-                            gstn_detail = response_data['result']['gstnDetailed'][0]
-                            gstn_record = response_data['result']['gstnRecords'][0]
+                    # response = requests.post(url, headers=headers, json=payload)
+                    # response_data = response.json()
+                    response = 200 
+                    # if response.status_code == 200:
+                    if response == 200:
+                            # gstn_detail = response_data['result']['gstnDetailed'][0]
+                            # gstn_record = response_data['result']['gstnRecords'][0]
 
-                            trade_name = gstn_detail.get('tradeNameOfBusiness', '')
-                            principal_address = gstn_detail.get('principalPlaceAddress', '')
-                            additional_address = gstn_detail.get('additionalPlaceAddress', '')
-                            state = gstn_detail.get('principalPlaceState', '')
-                            pincode = gstn_detail.get('principalPlacePincode', '')
-                            city = gstn_detail.get('principalPlaceCity', '')
-                            mobile_number = gstn_record.get('mobNum', '')
+                            # trade_name = gstn_detail.get('tradeNameOfBusiness', '')
+                            # principal_address = gstn_detail.get('principalPlaceAddress', '')
+                            # additional_address = gstn_detail.get('additionalPlaceAddress', '')
+                            # state = gstn_detail.get('principalPlaceState', '')
+                            # pincode = gstn_detail.get('principalPlacePincode', '')
+                            # city = gstn_detail.get('principalPlaceCity', '')
+                            # mobile_number = gstn_record.get('mobNum', '')
 
-                            # Constructing the response
-                            result = {
-                                "company_name": trade_name,
-                                "addressLine1": principal_address,
-                                "addressLine2": additional_address,
-                                "state": state,
-                                "pin_no": pincode,
-                                "city": city,
-                                "alternate_phone_no": mobile_number,
-                                "public_url_company" : None ,
-                                "email" : email,
-                                "PAN" : PAN
-                            }
+                            # # Constructing the response
+                            # result = {
+                            #     "company_name": trade_name,
+                            #     "addressLine1": principal_address,
+                            #     "addressLine2": additional_address,
+                            #     "state": state,
+                            #     "pin_no": pincode,
+                            #     "city": city,
+                            #     "alternate_phone_no": mobile_number,
+                            #     "public_url_company" : None ,
+                            #     "email" : email,
+                            #     "PAN" : PAN
+                            # }
 
-                            return JsonResponse(result, status=200)
+                            # return JsonResponse(result, status=200)
+                            return JsonResponse({"result": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
                     else:
                         return JsonResponse({"result": None ,"user" : userRole.id,"phoneNumber":userRole.user.mobile}, status=200)
         except models.UserRole.DoesNotExist:

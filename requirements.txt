@@ -13,3 +13,6 @@ tzdata == 2024.1
 django-cors-headers == 4.4.0
 requests == 2.32.3
 gunicorn == 23.0.0
+pyxirr == 0.10.5
+numpy == 2.1.1
+scipy == 1.14.1
