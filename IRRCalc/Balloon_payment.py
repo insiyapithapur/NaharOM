@@ -153,6 +153,7 @@ def Balloon_calculate_Sellerprice_to_XIRR(
 
         # Calculate interest for the partial month
         partial_interest_payment = daily_interest_rate * partial_days * remaining_principal
+        print("partial_interest_payment , ", partial_interest_payment)
 
         # Calculate the proportional principal for the partial period
         # Formula: (Partial Days / Full Month Days) * Principal per Installment

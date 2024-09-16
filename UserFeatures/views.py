@@ -1029,20 +1029,21 @@ def TobuyAPI(request):
                     unit.unitID.save()
 
                     print("ksjcbd b")
-                    # salespurchaseReport = models.SalePurchaseReport.objects.create(
-                    #     invoiceID = postForSale.invoice_id ,
-                    #     unitID = unit.unitID ,
-                    #     seller_ID = postForSale.user_id,
-                    #     buyerID_ID = user_role ,
-                    #     Sale_Buy_Date = timezone.now().date(),
-                    #     Sale_Buy_per_unit_price = postForSale.per_unit_price,
-                    #     ListingDate = timezone.now().date(),
-                    #     no_of_days_units_held = (sales.sell_date - postForSale.post_date).days,
-                    #     interest_due_to_seller = ( postForSale.per_unit_price * 10 ) / 100,
-                    #     TDS_deducted = ( postForSale.per_unit_price * 10 ) / 100,
-                    #     IRR = postForSale.invoice_id.irr
-                    # )
-                print("dbjcksb")
+                    salespurchaseReport = models.SalePurchaseReport.objects.create(
+                        invoiceID = postForSale.invoice_id ,
+                        unitID = unit.unitID ,
+                        seller_ID = postForSale.user_id,
+                        buyerID_ID = user_role ,
+                        Sale_Buy_Date = timezone.now().date(),
+                        Sale_Buy_per_unit_price = postForSale.per_unit_price,
+                        ListingDate = timezone.now().date(),
+                        transfer_date = timezone.now().date(),
+                        no_of_days_units_held = (sales.sell_date - postForSale.post_date).days,
+                        interest_due_to_seller = ( postForSale.per_unit_price * 10 ) / 100,
+                        TDS_deducted = ( postForSale.per_unit_price * 10 ) / 100,
+                        IRR = postForSale.invoice_id.irr
+                    )
+                print("salespurchaseReport ",salespurchaseReport.invoiceID)
                 
                 buyer_wallet.OutstandingBalance -= total_price
                 buyer_wallet.save()

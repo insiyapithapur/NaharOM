@@ -224,6 +224,7 @@ def BalloonPaymentAPI(request):
             loan_amount = data.get("loan_amount")
             num_fractions = data.get("num_fractions")
             fractional_unit_value = loan_amount / num_fractions
+            print("fractional_unit_value ",fractional_unit_value)
             annual_interest_rate = data.get("annual_interest_rate")
             total_installments = data.get("total_installments")
             loan_period_years = data.get("loan_period_years")

@@ -507,95 +507,96 @@ def usersLedgerAPI(request, user):
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
 
-# @csrf_exempt
-# def SalesPurchasedReportAPI(request,user):
-#     if request.method == 'GET':
-#         try:
-#             if not user:
-#                 return JsonResponse({"message": "user ID is required"}, status=400)
+@csrf_exempt
+def SalesPurchasedReportAPI(request,user):
+    if request.method == 'GET':
+        try:
+            if not user:
+                return JsonResponse({"message": "user ID is required"}, status=400)
             
-#             try:
-#                 user_role = models.UserRole.objects.get(id=user)
-#             except models.UserRole.DoesNotExist:
-#                 return JsonResponse({"message": "User not found"}, status=404)
+            try:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
 
-#             if not user_role.user.is_admin:
-#                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            if not user_role.user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
             
-#             with transaction.atomic():
-#                 try:
-#                     sales_purchase_reports = models.SalePurchaseReport.objects.all()
-#                     report_list = []
-#                     for report in sales_purchase_reports:
-#                         if report.seller_ID.role == 'Individual' :
-#                             try :
-#                                 seller_profile = models.IndividualDetails.objects.get(user_role=report.seller_ID)
-#                                 Seller_Name = seller_profile.first_name
-#                             except models.IndividualDetails.DoesNotExist:
-#                                 Seller_Name = None
-#                         else :
-#                             try :
-#                                 seller_profile = models.CompanyDetails.objects.get(user_role=report.seller_ID)
-#                                 Seller_Name = seller_profile.company_name
-#                             except models.CompanyDetails.DoesNotExist:
-#                                 Seller_Name = None
+            with transaction.atomic():
+                try:
+                    sales_purchase_reports = models.SalePurchaseReport.objects.all()
+                    report_list = []
+                    for report in sales_purchase_reports:
+                        if report.seller_ID.role == 'Individual' :
+                            try :
+                                seller_profile = models.IndividualDetails.objects.get(user_role=report.seller_ID)
+                                Seller_Name = seller_profile.first_name
+                            except models.IndividualDetails.DoesNotExist:
+                                Seller_Name = None
+                        else :
+                            try :
+                                seller_profile = models.CompanyDetails.objects.get(user_role=report.seller_ID)
+                                Seller_Name = seller_profile.company_name
+                            except models.CompanyDetails.DoesNotExist:
+                                Seller_Name = None
                         
-#                         if report.buyerID_ID.role == 'Individual' :
-#                             try :
-#                                 buyer_profile = models.IndividualDetails.objects.get(user_role=report.buyerID_ID)
-#                                 Buyer_Name = buyer_profile.first_name
-#                             except models.IndividualDetails.DoesNotExist:
-#                                 Buyer_Name = None
-#                         else :
-#                             try :
-#                                 buyer_profile = models.CompanyDetails.objects.get(user_role=report.buyerID_ID)
-#                                 Buyer_Name = buyer_profile.company_name
-#                             except models.CompanyDetails.DoesNotExist:
-#                                 Buyer_Name = None
+                        if report.buyerID_ID.role == 'Individual' :
+                            try :
+                                buyer_profile = models.IndividualDetails.objects.get(user_role=report.buyerID_ID)
+                                Buyer_Name = buyer_profile.first_name
+                            except models.IndividualDetails.DoesNotExist:
+                                Buyer_Name = None
+                        else :
+                            try :
+                                buyer_profile = models.CompanyDetails.objects.get(user_role=report.buyerID_ID)
+                                Buyer_Name = buyer_profile.company_name
+                            except models.CompanyDetails.DoesNotExist:
+                                Buyer_Name = None
 
-#                         try :
-#                             seller_pancard = models.PanCardNos.objects.get(user_role=report.seller_ID)
-#                             Seller_PAN = seller_pancard.pan_card_no
-#                         except models.PanCardNos.DoesNotExist:
-#                             Seller_PAN = None
+                        try :
+                            seller_pancard = models.PanCardNos.objects.get(user_role=report.seller_ID)
+                            Seller_PAN = seller_pancard.pan_card_no
+                        except models.PanCardNos.DoesNotExist:
+                            Seller_PAN = None
                         
-#                         try :
-#                             buyer_pancard = models.PanCardNos.objects.get(user_role=report.buyerID_ID)
-#                             Buyer_PAN = buyer_pancard.pan_card_no
-#                         except models.PanCardNos.DoesNotExist:
-#                             Buyer_PAN = seller_profile.first_name
+                        try :
+                            buyer_pancard = models.PanCardNos.objects.get(user_role=report.buyerID_ID)
+                            Buyer_PAN = buyer_pancard.pan_card_no
+                        except models.PanCardNos.DoesNotExist:
+                            Buyer_PAN = seller_profile.first_name
 
-#                         report_data = {
-#                             'id': report.id,
-#                             'invoiceID' : report.invoiceID.invoice_id,
-#                             'unitID' : report.unitID.fractional_unit_id,
-#                             'Listing_Date' : report.ListingDate,
-#                             'Seller_ID' : report.seller_ID.id,
-#                             'Seller_Name' : Seller_Name,
-#                             'Seller_PAN' : Seller_PAN,
-#                             'Sale_Buy_Date' : report.Sale_Buy_Date,
-#                             'Sale_Buy_per_unit_price' : report.Sale_Buy_per_unit_price,
-#                             'Buyer_ID' : report.buyerID_ID.id ,
-#                             'Buyer_Name' : Buyer_Name,
-#                             'Buyer_PAN' : Buyer_PAN,
-#                             'no_of_days_units_held' : report.no_of_days_units_held,
-#                             'interest_due_to_seller' : report.interest_due_to_seller,
-#                             'TDS_deducted' : report.TDS_deducted,
-#                             'IRR' : report.IRR  
-#                         }
-#                         report_list.append(report_data)
+                        report_data = {
+                            "id": report.id,
+                            "invoiceID" : report.invoiceID.invoice_id,
+                            "unitID" : report.unitID.fractional_unit_id,
+                            "Listing_Date" : report.ListingDate,
+                            "Seller_ID" : report.seller_ID.id,
+                            "Seller_Name" : Seller_Name,
+                            "Seller_PAN" : Seller_PAN,
+                            "Sale_Buy_Date" : report.Sale_Buy_Date,
+                            "Sale_Buy_per_unit_price" : report.Sale_Buy_per_unit_price,
+                            "Buyer_ID" : report.buyerID_ID.id,
+                            "Buyer_Name" : Buyer_Name,
+                            "Buyer_PAN" : Buyer_PAN,
+                            "transfer_date" : "2024-08-01",
+                            "no_of_days_units_held" : report.no_of_days_units_held,
+                            "interest_due_to_seller" : report.interest_due_to_seller,
+                            "TDS_deducted" : report.TDS_deducted,
+                            "IRR" : report.IRR  
+                        }
+                        report_list.append(report_data)
 
-#                     return JsonResponse({"sales_purchase_reports": report_list,"user":user_role.id}, status=200)
+                    return JsonResponse({"sales_purchase_reports": report_list,"user":user_role.id}, status=200)
 
-#                 except models.SalePurchaseReport.DoesNotExist:
-#                     return JsonResponse({"message": "SalePurchaseReport not found"}, status=404)
-#                 # return JsonResponse({"sales_purchase_report" : sales_purchase_report},status=200)
-#         except json.JSONDecodeError:
-#             return JsonResponse({"message": "Invalid JSON"}, status=400)
-#         except Exception as e:
-#             return JsonResponse({"message": str(e)}, status=500)
-#     else:
-#         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+                except models.SalePurchaseReport.DoesNotExist:
+                    return JsonResponse({"message": "SalePurchaseReport not found"}, status=404)
+                # return JsonResponse({"sales_purchase_report" : sales_purchase_report},status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
     
 def generate_token(admin_id, user_role_id):
     timestamp = int(time.time())
