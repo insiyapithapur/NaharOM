@@ -585,12 +585,62 @@ def SalesPurchasedReportAPI(request,user):
                             "IRR" : report.IRR  
                         }
                         report_list.append(report_data)
-
-                    return JsonResponse({"sales_purchase_reports": report_list,"user":user_role.id}, status=200)
+                    return JsonResponse({"sales_purchase_reports": report_list ,"user":user_role.id}, status=200)
 
                 except models.SalePurchaseReport.DoesNotExist:
                     return JsonResponse({"message": "SalePurchaseReport not found"}, status=404)
                 # return JsonResponse({"sales_purchase_report" : sales_purchase_report},status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
+@csrf_exempt
+def TdsReportAPI(request,user):
+    if request.method == 'GET':
+        try:
+            if not user:
+                return JsonResponse({"message": "user ID is required"}, status=400)
+            
+            try:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+
+            if not user_role.user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            
+            with transaction.atomic():
+                
+                report_data = {
+                    "id" : 1 ,
+                    "PurchaserID" : 1,
+                    "Name_of_the_Purchaser_of_Units" : "NAME",
+                    "PAN_No" : "BUYER",
+                    "Name_of_the_Co" : "None",
+                    "PAN_No_of_the_Co" : "None",
+                    "TAN_No_of_the_Co" : "None",
+                    "Value_of_Per_Unit": 10000,
+                    "Units_Purchased" : 2,
+                    "Date_of_Purchase" : "2024-08-01",
+                    "Interest_date " : "2024-08-01",
+                    "ROI" : 3.7 ,
+                    "Sale_price_per_unit" : 10000,
+                    "Sell_Date" : "2024-08-01",
+                    "Total_No_of_days_Units_were_held" : 84,
+                    "Total_Amount_credited" : 10000,
+                    "Expected_Interest" : 6.78,
+                    "Actual_Interest_credited": 6.73,
+                    "Date_of_Payment" : "2024-08-01",
+                    "Nature_of_Payment" : "MONTHLY",
+                    "Quarter" : "None",
+                    "TDS" : 20,
+                    "Reciept_No_of_TDS":21,
+                    "CIN details" : "None"
+                    }
+                return JsonResponse({"sales_purchase_reports": "nksjxnk","user":user_role.id}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

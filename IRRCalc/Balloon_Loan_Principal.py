@@ -1,8 +1,8 @@
 import numpy as np
 import datetime
 import pyxirr
-from scipy import optimize
 from dateutil.relativedelta import relativedelta
+from scipy import optimize
 
 def days_between_dates(date1, date2):
     return (date2 - date1).days
@@ -26,7 +26,7 @@ def get_next_schedule_date(date, payment_frequency):
 def frequency_interest(interest_rate, days):
     return (1 + interest_rate) ** (1 / days) - 1
 
-def calculate_Fixedbuyer_price_to_XIRR(
+def calculate_BaloonPrincipalBuyer_price_to_XIRR(
     fractional_unit_value,
     loan_amount, # principle amount of the loan eg :- 10,000,000
     num_fractions, # no of fraction for the loan eg :- 20 
@@ -36,20 +36,18 @@ def calculate_Fixedbuyer_price_to_XIRR(
     loan_period_years,
     disbursed_date, #The start date of the loan 
     first_payment_date, #date when the buyer makes their first installment payment.
-    payment_frequency #typically set by the borrower (or lender)
-):
-    
-    # total_installments = loan_period_years * 12 #months
-    principal_per_installment = loan_amount / total_installments
+    payment_frequency, #typically set by the borrower (or lender)
+    monthly_payment, #fixed here
+): 
+
     daily_interest_rate = frequency_interest(annual_interest_rate, 365)
-    
     investment_amount = fractional_unit_value * units_bought
 
     dates = []
     amounts = []
 
     remaining_principal = investment_amount
-
+  
     # Initial investment outflow
     dates.append(disbursed_date)
     amounts.append(-investment_amount)
@@ -57,33 +55,49 @@ def calculate_Fixedbuyer_price_to_XIRR(
     current_date = first_payment_date
     prev_date = disbursed_date
 
+    payment_count = 0
+
     while remaining_principal > 0:
+        payment_count += 1
+       
         days_between = days_between_dates(prev_date, current_date)
-        interest_payment = daily_interest_rate * days_between * remaining_principal #investment amount
-        principal_payment = (principal_per_installment / num_fractions) * units_bought #total loan amount 
-
-        if principal_payment > remaining_principal:
-            principal_payment = remaining_principal
-
-        total_payment = principal_payment + interest_payment
-
+        interest_payment = days_between * daily_interest_rate * remaining_principal  # Calculate interest payment
         
+        if payment_count == total_installments or (payment_count == total_installments - 1 and remaining_principal < monthly_payment):
+            # For the last payment, adjust to cover all remaining principal
+            principal_payment = remaining_principal
+            total_payment = principal_payment + interest_payment
+        else:
+            # For regular payments, use the fixed monthly payment
+            principal_payment = monthly_payment - interest_payment
+            total_payment = monthly_payment
+
+     
+
         dates.append(current_date)
         amounts.append(total_payment)
 
+        # Update remaining principal by subtracting the principal payment
         remaining_principal -= principal_payment
-        print(f"principal_payment: {principal_payment:.2f}, interest_payment: {interest_payment:.2f}, total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, prev_date: {prev_date}, current_date: {current_date}")
 
+        print(f"principal_payment: {principal_payment:.2f}, interest_payment: {interest_payment:.2f}, "
+            f"total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, "
+            f"prev_date: {prev_date}, current_date: {current_date}")
+        
         prev_date = current_date
         current_date = get_next_schedule_date(current_date, payment_frequency)
-        
-       
-    # Calculate XIRR using pyxirr
+
+        # If remaining principal is very close to zero, break the loop
+        if abs(remaining_principal) < 1e-6:  # Use a tolerance for floating-point precision
+            break
+
+        # Calculate XIRR using pyxirr
     xirr_value = pyxirr.xirr(dates, amounts)
     return dates, amounts, xirr_value
 
 
-def calculate_FixedSeller_price_to_XIRR(
+
+def calculate_BalloonPrinipalSeller_price_to_XIRR(
     fractional_unit_value,
     loan_amount, # principal amount of the loan, e.g. 10,000,000
     num_fractions, # number of fractions for the loan, e.g. 20 
@@ -143,7 +157,7 @@ def calculate_FixedSeller_price_to_XIRR(
       
         # Subtract the principal payment from the remaining principal
         remaining_principal -= principal_payment
-        print(f"principal_payment: {principal_payment:.2f}, interest_payment: {interest_payment:.2f}, total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, prev_date: {prev_date}, current_date: {current_date}")
+        # print(f"principal_payment: {principal_payment:.2f}, interest_payment: {interest_payment:.2f}, total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, prev_date: {prev_date}, current_date: {current_date}")
 
 
         # Move to the next payment date
@@ -174,16 +188,18 @@ def calculate_FixedSeller_price_to_XIRR(
         amounts.append(total_payment)
 
         # Debugging output
-        print(f"Last installment: partial_principal_payment: {partial_principal_payment:.2f}, "
-              f"partial_interest_payment: {partial_interest_payment:.2f}, "
-              f"total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, "
-              f"prev_date: {prev_date}, end_date: {end_date} ",
-              f"full_month_days: {full_month_days}" 
-              )
+        # print(f"Last installment: partial_principal_payment: {partial_principal_payment:.2f}, "
+        #       f"partial_interest_payment: {partial_interest_payment:.2f}, "
+        #       f"total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, "
+        #       f"prev_date: {prev_date}, end_date: {end_date} ",
+        #       f"full_month_days: {full_month_days}" 
+        #       )
 
     # Calculate XIRR based on cash flows (dates and amounts)
     xirr_value = pyxirr.xirr(dates, amounts)
+
     return dates, amounts, xirr_value
+
 
 
 def calculate_xirr(cashflows, dates, additional_amount):
@@ -199,7 +215,7 @@ def find_additional_amount(target_xirr, cashflows, dates):
     result = optimize.brentq(objective_function, 0, 10 * abs(cashflows[0]))
     return result
 
-def calculate_FixedSeller_XIRR_to_price(
+def calculate_BalloonPrincipalSeller_XIRR_to_price(
     fractional_unit_value,
     loan_amount, # principal amount of the loan, e.g. 10,000,000
     num_fractions, # number of fractions for the loan, e.g. 20 
@@ -210,10 +226,11 @@ def calculate_FixedSeller_XIRR_to_price(
     first_payment_date, # date when the buyer makes their first installment payment
     payment_frequency, # typically set by the borrower (or lender)
     end_date, # Flexible end date (can be partial month)
-    target_xirr
+    target_xirr,
+    monthly_payment
 ):
     total_installments = loan_period_years * 12 # Full months
-    principal_per_installment = loan_amount / total_installments
+
     daily_interest_rate = 0.0004996359
 
     investment_amount = fractional_unit_value * units_bought
@@ -229,6 +246,10 @@ def calculate_FixedSeller_XIRR_to_price(
     prev_date = disbursed_date
     installment_count = 0
 
+    last_principal = 0
+    last_interest = 0
+    last_total_payment = 0
+
     while current_date < end_date: 
         installment_count += 1
 
@@ -237,11 +258,11 @@ def calculate_FixedSeller_XIRR_to_price(
         # Interest payment is scaled by the units bought
         interest_payment = daily_interest_rate * days_between * remaining_principal
         # Principal payment is scaled by the units bought
-        principal_payment = (principal_per_installment / num_fractions) * units_bought
-
-        if principal_payment > remaining_principal:
-            principal_payment = remaining_principal
-
+        principal_payment = monthly_payment - interest_payment  # Remaining amount goes to principal
+        last_principal = principal_payment
+        last_interest =  interest_payment
+        total_payment = monthly_payment
+      
         # Normal total payment for all months except the last
         total_payment = principal_payment + interest_payment
         
@@ -252,7 +273,7 @@ def calculate_FixedSeller_XIRR_to_price(
         # Subtract the principal payment from the remaining principal
         remaining_principal -= principal_payment
         print(f"principal_payment: {principal_payment:.2f}, interest_payment: {interest_payment:.2f}, total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, prev_date: {prev_date}, current_date: {current_date}")
-
+        last_total_payment = total_payment
 
         # Move to the next payment date
         prev_date = current_date
@@ -261,25 +282,29 @@ def calculate_FixedSeller_XIRR_to_price(
     if current_date != end_date:
         # Calculate the remaining days from the last full installment to the flexible end date
         partial_days = (end_date - prev_date).days
-        
+        print(f"partial_days: {partial_days}",f"daily_interest_rate: {daily_interest_rate}",f"remaining_principal: {remaining_principal}")
         # Calculate interest for the partial month
         partial_interest_payment = daily_interest_rate * partial_days * remaining_principal
         
         # Calculate the proportional principal for the partial period
         # Formula: (Partial Days / Full Month Days) * Principal per Installment
         full_month_days = (get_next_schedule_date(prev_date, payment_frequency) - prev_date).days
-        partial_principal_payment = (partial_days / full_month_days) * principal_payment
+        partial_principal_payment = (partial_days / full_month_days) * (monthly_payment - (full_month_days * daily_interest_rate * remaining_principal))
         
         if partial_principal_payment > remaining_principal:
             partial_principal_payment = remaining_principal
-
+        last_principal = partial_principal_payment
+        last_interest =  partial_interest_payment
         # Add additional payment to the last installment if applicable
         total_payment = partial_principal_payment + partial_interest_payment 
 
         # Append the final payment date and amount
         dates.append(end_date)
         amounts.append(total_payment)
+        last_total_payment = total_payment
+        print(f"principal_payment: {partial_principal_payment:.2f}, interest_payment: {partial_interest_payment:.2f}, total_payment: {total_payment:.2f}, remaining_principal: {remaining_principal:.2f}, prev_date: {prev_date}, current_date: {end_date}")
 
+    print(f"last principal: {last_principal}",f"last interest: {last_interest}",f"last payment:{last_total_payment}")
     # Find the additional amount needed to achieve the target target_xirr
     additional_amount = find_additional_amount(target_xirr, amounts, dates)
 
@@ -306,5 +331,4 @@ def calculate_FixedSeller_XIRR_to_price(
         "cashflow_details": cashflow_details,
         "sale_price": f"{additional_amount:.2f}"
     }
-
     return result

@@ -21,3 +21,4 @@ scipy == 1.14.1
 idna == 3.7
 python-dateutil == 2.9.0.post0
 urllib3 == 2.2.2
+numpy_financial == 1.0.0

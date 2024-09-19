@@ -262,3 +262,26 @@ class SalePurchaseReport(models.Model):
     interest_due_to_seller = models.FloatField()
     TDS_deducted = models.FloatField()
     IRR = models.FloatField()
+
+# class TDSReport(models.Model):
+#     PurchaserID = models.ForeignKey(UserRole,on_delete=models.CASCADE , related_name='buyerID')
+#     Name_of_the_Co" : "None",
+#                     "PAN_No_of_the_Co" : "None",
+#                     "TAN_No_of_the_Co" : "None",
+#                     "Value_of_Per_Unit": 10000,
+#                     "Units_Purchased" : 2,
+#                     "Date_of_Purchase" : "2024-08-01",
+#                     "Interest_date " : "2024-08-01",
+#                     "ROI" : 3.7 ,
+#                     "Sale_price_per_unit" : 10000,
+#                     "Sell_Date" : "2024-08-01",
+#                     "Total_No_of_days_Units_were_held" : 84,
+#                     "Total_Amount_credited" : 10000,
+#                     "Expected_Interest" : 6.78,
+#                     "Actual_Interest_credited": 6.73,
+#                     "Date_of_Payment" : "2024-08-01",
+#                     "Nature_of_Payment" : "MONTHLY",
+#                     "Quarter" : "None",
+#                     "TDS" : 20,
+#                     "Reciept_No_of_TDS":21,
+#                     "CIN details" : "None"
