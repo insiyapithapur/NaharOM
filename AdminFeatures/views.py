@@ -647,7 +647,66 @@ def TdsReportAPI(request,user):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
-    
+
+@csrf_exempt
+def BidReportAPI(request,user):
+    if request.method == "GET":
+        try:
+            if not user:
+                return JsonResponse({"message": "user ID is required"}, status=400)
+            
+            try:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+
+            if not user_role.user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            
+            with transaction.atomic():
+                try:
+                    with open('BidReport.json', 'r') as file:
+                        bid_report_data = json.load(file)
+                except FileNotFoundError:
+                    return JsonResponse({"message": "Bid report file not found"}, status=404)
+                return JsonResponse(bid_report_data, safe=False, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
+@csrf_exempt
+def TradingActivityReportAPI(request , user):
+    if request.method == "GET":
+        try:
+            if not user:
+                return JsonResponse({"message": "user ID is required"}, status=400)
+            
+            try:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+
+            if not user_role.user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            
+            with transaction.atomic():
+                try:
+                    with open('TradingActivityReport.json', 'r') as file:
+                        TradingActivityReport_data = json.load(file)
+                except FileNotFoundError:
+                    return JsonResponse({"message": "Trading Activity Report file not found"}, status=404)
+                return JsonResponse(TradingActivityReport_data, safe=False, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
+
 def generate_token(admin_id, user_role_id):
     timestamp = int(time.time())
     token = f"{admin_id}:{user_role_id}:{timestamp}"
