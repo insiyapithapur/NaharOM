@@ -705,6 +705,36 @@ def TradingActivityReportAPI(request , user):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+    
+@csrf_exempt
+def APIMgtReportAPI(request,user):
+    if request.method == "GET":
+        try:
+            if not user:
+                return JsonResponse({"message": "user ID is required"}, status=400)
+            
+            try:
+                user_role = models.UserRole.objects.get(id=user)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+
+            if not user_role.user.is_admin:
+                return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
+            
+            with transaction.atomic():
+                try:
+                    with open('APIMgtReport.json', 'r') as file:
+                        APIMgtReport_data = json.load(file)
+                except FileNotFoundError:
+                    return JsonResponse({"message": "APIMgt Report file not found"}, status=404)
+                return JsonResponse(APIMgtReport_data, safe=False, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"message": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only GET methods are allowed"}, status=405)
+
 
 
 def generate_token(admin_id, user_role_id):

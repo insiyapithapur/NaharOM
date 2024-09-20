@@ -19,7 +19,9 @@ urlpatterns = [
     path('TdsReport/<int:user>',views.TdsReportAPI),
     path('BidReport/<int:user>',views.BidReportAPI),
     path('TradingActivityReport/<int:user>',views.TradingActivityReportAPI),
+    path('APIMgtReport/<int:user>',views.APIMgtReportAPI),
 
+    
     path('GenerateToken/<int:admin_id>/<int:user_role_id>/',views.GenerateTokenAPI),
     path('userPersonate/<slug:token>/',views.UserPersonateAPI),
 ]
