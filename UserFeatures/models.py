@@ -187,7 +187,7 @@ class Post_for_sale(models.Model):
   to_date = models.DateField()
   sold = models.BooleanField(default=False) 
 
-  type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='fixed')
+  type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='fixed') #change to bid when user post with bidding
   no_of_bid = models.IntegerField(null=True , default=0)
   open_for_bid = models.BooleanField(null=True,default=False)
 
@@ -233,9 +233,7 @@ class Sales_UnitTracker(models.Model):
 
 class User_Bid(models.Model):
     STATUS_CHOICES = [
-        ('bid_open', 'Bid Open'),
         ('awaiting_acceptance', 'Awaiting Acceptance'),
-        ('funding_awaited', 'Funding Awaited'),
         ('closed', 'Closed'),
         ('expired', 'Expired'),
     ]
@@ -243,7 +241,9 @@ class User_Bid(models.Model):
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='bid_open')
     user_id = models.ForeignKey(UserRole, on_delete=models.CASCADE)
     bid_price = models.FloatField()
-    datetime = models.DateTimeField(default=timezone.now)
+    no_of_units = models.IntegerField()
+    updated_at = models.DateTimeField(default=timezone.now())
+    datetime = models.DateTimeField(default=timezone.now())
 
     def __str__(self):
         return f"Bid {self.id}: User {self.user_id.user.mobile}, Status: {self.status}"

@@ -855,35 +855,39 @@ def GetSellPurchaseDetailsAPI(request, user):
                         }
                         invoice_data_list.append(invoice_data)
 
-            # bided 
-            dummy_data = {
-                            'id': 1,
-                            'Invoice_id': "invoice.invoice_id",
-                            'Invoice_primary_id': 2,
-                            'Invoice_no_of_units': 20,
-                            'post_for_sellID' : 1,
-                            'Invoice_remaining_units': 5,
-                            'Invoice_per_unit_price': 5000,
-                            'Invoice_total_price' : 25000 ,
-                            'Invoice_name': "invoice.product_name",
-                            'Invoice_post_date': timezone.now().date(),
-                            'Invoice_post_time': timezone.now().time(),
-                            'Invoice_interest': 0.20,
-                            'Invoice_xirr': 19.84,
-                            'Invoice_irr': 19.84,
-                            'Invoice_from_date' : timezone.now().date(),
-                            'Invoice_to_date' : timezone.now().time(),
-                            'Invoice_tenure_in_days': 195,
-                            'Invoice_expiration_time': timezone.now().time(),
-                            'isAdmin': True,
-                            'Invoice_type' : "Bidding",
-                            'Invoice_no_of_bid' : 4,
-                            'BID_status' : "status",
-                            "bid_price" : 6000,
-                            "BID_datetime" : timezone.now(),
-                            'type': 'Bidded'
-            }
-            invoice_data_list.append(dummy_data)
+            # bidded
+            bidded = models.User_Bid.objects.filter(user_id=userRole)
+            for bid in bidded:
+                bidded_data = {
+                    'id': bid.posted_for_sale_id.invoice_id.id,
+                    'Invoice_id': bid.posted_for_sale_id.invoice_id.invoice_id,
+                    'Invoice_primary_id': bid.posted_for_sale_id.invoice_id.primary_invoice_id,
+                    'Invoice_no_of_units': bid.posted_for_sale_id.no_of_units,
+                    'post_for_sellID' : bid.posted_for_sale_id.id,
+                    'Invoice_remaining_units': bid.posted_for_sale_id.remaining_units,
+                    'Invoice_per_unit_price': bid.posted_for_sale_id.per_unit_price,
+                    'Invoice_total_price' : bid.posted_for_sale_id.total_price ,
+                    'Invoice_name': bid.posted_for_sale_id.invoice_id.product_name,
+                    'Invoice_post_date': bid.posted_for_sale_id.post_date,
+                    'Invoice_post_time': bid.posted_for_sale_id.post_time,
+                    'Invoice_interest': bid.posted_for_sale_id.invoice_id.interest,
+                    'Invoice_xirr': bid.posted_for_sale_id.invoice_id.xirr,
+                    'Invoice_irr': bid.posted_for_sale_id.invoice_id.irr,
+                    'Invoice_from_date' : bid.posted_for_sale_id.from_date,
+                    'Invoice_to_date' : bid.posted_for_sale_id.to_date ,
+                    'Invoice_tenure_in_days': bid.posted_for_sale_id.invoice_id.tenure_in_days,
+                    'Invoice_expiration_time': bid.posted_for_sale_id.invoice_id.expiration_time,
+                    'isAdmin': bid.posted_for_sale_id.user_id.user.is_admin,
+                    'Invoice_type' : bid.posted_for_sale_id.type,
+                    'Invoice_no_of_bid' : bid.posted_for_sale_id.no_of_bid,
+                    'open_for_bid' : bid.posted_for_sale_id.open_for_bid,
+                    'status' : bid.status,
+                    'bid_price' : bid.bid_price,
+                    'no_of_units' : bid.no_of_units,
+                    'updated_at' : bid.updated_at,
+                    'type': 'bidded'
+                }
+                invoice_data_list.append(bidded_data)
 
             buyers = models.Buyers.objects.filter(user_id=userRole)
             for buyer in buyers:
@@ -952,6 +956,9 @@ def GetSellPurchaseDetailsAPI(request, user):
                                     'Posted_total_price': post_for_sale.total_price,
                                     'Posted_from_date': post_for_sale.from_date,
                                     'Posted_to_date': post_for_sale.to_date,
+                                    'Posted_type' : post_for_sale.type,
+                                    'Posted_no_of_bid' : post_for_sale.no_of_bid,
+                                    'Posted_open_for_bid' : post_for_sale.open_for_bid,
                                     'Invoice_name': post_invoice.product_name,
                                     'Buyer_Purchased_date': buyer.purchase_date,
                                     'Buyer_Purchased_time': buyer.purchase_time,
@@ -1138,11 +1145,11 @@ def ToSellAPI(request):
             buyerID = data.get('buyerID')
             no_of_units = data.get('no_of_units')
             per_unit_price = data.get('per_unit_price')
-            total_price = data.get('total_price')
             from_date = data.get('from_date')
             to_date = data.get('to_date')
+            type_of_sell = data.get('type_of_sell')
 
-            if not all([userRoleID, no_of_units, per_unit_price]):
+            if not all([userRoleID, buyerID , no_of_units, per_unit_price,from_date,to_date,type_of_sell]):
                 return JsonResponse({"message": "All fields are required"}, status=400)
 
             try:
@@ -1156,7 +1163,6 @@ def ToSellAPI(request):
                 return JsonResponse({"message": "Buyer not found"}, status=400)
 
             with transaction.atomic():
-
                 try :
                     buyer_Units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer , post_for_saleID = None).order_by('id')[:no_of_units]
                 except models.Buyer_UnitsTracker.DoesNotExist:
@@ -1169,21 +1175,32 @@ def ToSellAPI(request):
                     invoice = buyer_unit.unitID.invoice
                     break
 
+                if type_of_sell == "FIXED":
+                    open_to_bid = False
+                elif type_of_sell == "BIDDABLE":
+                    open_to_bid = True
+                    type = "Bidding"
+                else :
+                    return JsonResponse({"message": "type_of_sell should be FIXED or BIDDABLE"}, status=400)
+
                 post_for_sale = models.Post_for_sale.objects.create(
                     no_of_units = no_of_units ,
                     per_unit_price = per_unit_price ,
-                    total_price = total_price,
                     user_id = user_role ,
                     invoice_id = invoice ,
                     remaining_units = no_of_units ,
+                    total_price =  ( no_of_units * per_unit_price ),
                     withdrawn = False ,
                     post_time = timezone.now().time() ,
                     post_date = timezone.now().date() ,
                     from_date = from_date ,
                     to_date = to_date ,
                     sold = False ,
+                    type = type,
+                    no_of_bid = 0 ,
+                    open_for_bid = open_to_bid ,
                     post_dateTime = timezone.now() ,
-                    is_admin =  user_role.user.is_admin 
+                    is_admin =  user_role.user.is_admin # handle case : user_role.user.is_admin == admin then he can't do bidding
                 )
 
                 for buyer_unit in buyer_Units:
