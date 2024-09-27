@@ -170,6 +170,10 @@ class AdminSettings(models.Model):
         return f"Interest Cut Off Time: {self.interest_cut_off_time}"
 
 class Post_for_sale(models.Model):
+  TYPE_CHOICES = [
+        ('Fixed', 'Fixed'),
+        ('Bidding', 'Bid'),
+    ]
   no_of_units = models.IntegerField()
   per_unit_price = models.FloatField()
   user_id = models.ForeignKey(UserRole,on_delete=models.CASCADE)
@@ -181,7 +185,12 @@ class Post_for_sale(models.Model):
   post_date = models.DateField(default=timezone.now())
   from_date = models.DateField()
   to_date = models.DateField()
-  sold = models.BooleanField(default=False)
+  sold = models.BooleanField(default=False) 
+
+  type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='fixed')
+  no_of_bid = models.IntegerField(null=True , default=0)
+  open_for_bid = models.BooleanField(null=True,default=False)
+
   post_dateTime = models.DateTimeField(default=timezone.now())
   configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE,null=True, blank=True)
   is_admin =  models.BooleanField()
@@ -221,6 +230,24 @@ class Post_For_Sale_UnitTracker(models.Model):
 class Sales_UnitTracker(models.Model):
     unitID = models.ForeignKey(FractionalUnits,on_delete=models.CASCADE)
     sellersID = models.ForeignKey(Sales,on_delete=models.CASCADE,null=True,default=None)
+
+class User_Bid(models.Model):
+    STATUS_CHOICES = [
+        ('bid_open', 'Bid Open'),
+        ('awaiting_acceptance', 'Awaiting Acceptance'),
+        ('funding_awaited', 'Funding Awaited'),
+        ('closed', 'Closed'),
+        ('expired', 'Expired'),
+    ]
+    posted_for_sale_id = models.ForeignKey(Post_for_sale, on_delete=models.CASCADE)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='bid_open')
+    user_id = models.ForeignKey(UserRole, on_delete=models.CASCADE)
+    bid_price = models.FloatField()
+    datetime = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Bid {self.id}: User {self.user_id.user.mobile}, Status: {self.status}"
+
 
 class WalletTransaction(models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)

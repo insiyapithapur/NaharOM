@@ -18,5 +18,8 @@ urlpatterns = [
     path('GetSellPurchaseDetails/<int:user>',views.GetSellPurchaseDetailsAPI), #DONE
     path('ToBuy/',views.TobuyAPI), #wallet_to_buy #DONE
     path('PostForSell/',views.ToSellAPI), #sell_to_wallet #DONE
+    path('checkBalanceAgainstBidPrice/',views.checkBalanceAgainstBidPrice),
+    path('proceedToBid/',views.proceedToBid),
+    path('withdrawBid/',views.withdrawBid),
     path('cashFlow/<int:invoiceID>/',views.cashFlowAPI)
 ]

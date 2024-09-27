@@ -848,12 +848,44 @@ def GetSellPurchaseDetailsAPI(request, user):
                             'Invoice_tenure_in_days': invoice.tenure_in_days,
                             'Invoice_expiration_time': invoice.expiration_time,
                             'isAdmin': post_for_sale.user_id.user.is_admin,
+                            'Invoice_type' : post_for_sale.type,
+                            'Invoice_no_of_bid' : post_for_sale.no_of_bid,
+                            'open_for_bid' : post_for_sale.open_for_bid,
                             'type': 'CanBuy'
                         }
                         invoice_data_list.append(invoice_data)
 
-            buyers = models.Buyers.objects.filter(user_id=userRole)
+            # bided 
+            dummy_data = {
+                            'id': 1,
+                            'Invoice_id': "invoice.invoice_id",
+                            'Invoice_primary_id': 2,
+                            'Invoice_no_of_units': 20,
+                            'post_for_sellID' : 1,
+                            'Invoice_remaining_units': 5,
+                            'Invoice_per_unit_price': 5000,
+                            'Invoice_total_price' : 25000 ,
+                            'Invoice_name': "invoice.product_name",
+                            'Invoice_post_date': timezone.now().date(),
+                            'Invoice_post_time': timezone.now().time(),
+                            'Invoice_interest': 0.20,
+                            'Invoice_xirr': 19.84,
+                            'Invoice_irr': 19.84,
+                            'Invoice_from_date' : timezone.now().date(),
+                            'Invoice_to_date' : timezone.now().time(),
+                            'Invoice_tenure_in_days': 195,
+                            'Invoice_expiration_time': timezone.now().time(),
+                            'isAdmin': True,
+                            'Invoice_type' : "Bidding",
+                            'Invoice_no_of_bid' : 4,
+                            'BID_status' : "status",
+                            "bid_price" : 6000,
+                            "BID_datetime" : timezone.now(),
+                            'type': 'Bidded'
+            }
+            invoice_data_list.append(dummy_data)
 
+            buyers = models.Buyers.objects.filter(user_id=userRole)
             for buyer in buyers:
                 # not posted for sale
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer,post_for_saleID__isnull=True)
@@ -879,6 +911,7 @@ def GetSellPurchaseDetailsAPI(request, user):
                         'Invoice_expiration_time': brought_invoice.expiration_time,
                         'isAdmin': buyer.user_id.user.is_admin,
                         'Buyer_user_id': buyer.user_id.id,
+                        'Bid_price' : 123,
                         'type': 'Brought'
                     }
                     invoice_data_list.append(invoice_data)
@@ -1194,6 +1227,42 @@ def create_entry(request):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+@csrf_exempt
+def checkBalanceAgainstBidPrice(request):
+    if request.method == 'POST':
+        try:
+            # in json userID , bid price will be given 
+            #  check against balance 
+            return JsonResponse({"user":1,"balance_available":True},status = 200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+@csrf_exempt
+def proceedToBid(request):
+    if request.method == 'POST':
+        try:
+            # in json userID , bid price , post_for_sale_ID will be given 
+            # record this bid in database 
+            return JsonResponse({"user":1,"message":"successfully done bidding"},status = 200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+@csrf_exempt
+def withdrawBid(request):
+    if request.method == 'POST':
+        try:
+            # in json userID , BID_ID will be given 
+            return JsonResponse({"user":1,"message":"successfully withdraw bid"},status = 200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)    
+
     
 @csrf_exempt
 def cashFlowAPI(request,invoiceID):
@@ -1228,4 +1297,4 @@ def cashFlowAPI(request,invoiceID):
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=500)
     else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+        return JsonResponse({"message": "Only GET method is allowed"}, status=405)

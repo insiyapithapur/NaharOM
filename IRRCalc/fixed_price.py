@@ -28,15 +28,15 @@ def frequency_interest(interest_rate, days):
 
 def calculate_Fixedbuyer_price_to_XIRR(
     fractional_unit_value,
-    loan_amount, # principle amount of the loan eg :- 10,000,000
-    num_fractions, # no of fraction for the loan eg :- 20 
-    annual_interest_rate, # interest rate that buyer has to pay with invested amount
-    total_installments, #The total duration of the loan in years.
+    loan_amount, 
+    num_fractions, 
+    annual_interest_rate, 
+    total_installments, 
     units_bought, 
     loan_period_years,
-    disbursed_date, #The start date of the loan 
-    first_payment_date, #date when the buyer makes their first installment payment.
-    payment_frequency #typically set by the borrower (or lender)
+    disbursed_date, 
+    first_payment_date, 
+    payment_frequency 
 ):
     
     # total_installments = loan_period_years * 12 #months
