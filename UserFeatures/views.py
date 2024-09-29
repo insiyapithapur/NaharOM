@@ -10,6 +10,7 @@ from django.utils.dateparse import parse_time
 import requests
 from django.db.models import Q
 from collections import defaultdict
+from django.db.models import Max
 
 @csrf_exempt
 def GenerateOtpAPI(request):
@@ -826,7 +827,7 @@ def GetSellPurchaseDetailsAPI(request, user):
             invoice_data_list = []
 
             for invoice in invoices:
-                post_for_sales = models.Post_for_sale.objects.filter(invoice_id = invoice ,sold=False,remaining_units__gt=0).exclude(user_id=userRole)
+                post_for_sales = models.Post_for_sale.objects.filter(invoice_id = invoice ,sold=False,remaining_units__gt=0,withdrawn=False).exclude(user_id=userRole)
                 for post_for_sale in post_for_sales:
                         invoice_data = {
                             'id': invoice.id,
@@ -834,6 +835,7 @@ def GetSellPurchaseDetailsAPI(request, user):
                             'Invoice_primary_id': invoice.primary_invoice_id,
                             'Invoice_no_of_units': post_for_sale.no_of_units,
                             'post_for_sellID' : post_for_sale.id,
+                            'Posted_withdrawn' : post_for_sale.withdrawn,
                             'Invoice_remaining_units': post_for_sale.remaining_units,
                             'Invoice_per_unit_price': post_for_sale.per_unit_price,
                             'Invoice_total_price' : post_for_sale.total_price ,
@@ -853,17 +855,41 @@ def GetSellPurchaseDetailsAPI(request, user):
                             'open_for_bid' : post_for_sale.open_for_bid,
                             'type': 'CanBuy'
                         }
+
+                        if post_for_sale.type == "Bidding" and post_for_sale.open_for_bid == True:
+                            bids = models.User_Bid.objects.filter(posted_for_sale_id=post_for_sale,withdraw=False)
+                            print("bids.count()sxass",bids.count())
+                            bid_details = []
+                            for bid in bids:
+                                print("bid.id saasx ",bid.id)
+                                bid_detail = {
+                                    'bid_id': bid.id,
+                                    'user_id': bid.user_id.id,
+                                    'bid_price': bid.per_unit_bid_price,
+                                    'no_of_units': bid.no_of_units,
+                                    'status': bid.status,
+                                    'withdrawn' : bid.withdraw,
+                                    'created_at': bid.datetime,
+                                }
+                                bid_details.append(bid_detail)
+
+                            highest_bid = bids.aggregate(Max('per_unit_bid_price'))['per_unit_bid_price__max'] if bids else None
+
+                            invoice_data['bids'] = bid_details
+                            invoice_data['highest_bid'] = highest_bid
+
                         invoice_data_list.append(invoice_data)
 
             # bidded
-            bidded = models.User_Bid.objects.filter(user_id=userRole)
+            bidded = models.User_Bid.objects.filter(user_id=userRole,status="awaiting_acceptance")
             for bid in bidded:
                 bidded_data = {
                     'id': bid.posted_for_sale_id.invoice_id.id,
                     'Invoice_id': bid.posted_for_sale_id.invoice_id.invoice_id,
                     'Invoice_primary_id': bid.posted_for_sale_id.invoice_id.primary_invoice_id,
-                    'Invoice_no_of_units': bid.posted_for_sale_id.no_of_units,
                     'post_for_sellID' : bid.posted_for_sale_id.id,
+                    "bidID" : bid.id,
+                    'Invoice_no_of_units': bid.posted_for_sale_id.no_of_units,
                     'Invoice_remaining_units': bid.posted_for_sale_id.remaining_units,
                     'Invoice_per_unit_price': bid.posted_for_sale_id.per_unit_price,
                     'Invoice_total_price' : bid.posted_for_sale_id.total_price ,
@@ -882,7 +908,8 @@ def GetSellPurchaseDetailsAPI(request, user):
                     'Invoice_no_of_bid' : bid.posted_for_sale_id.no_of_bid,
                     'open_for_bid' : bid.posted_for_sale_id.open_for_bid,
                     'status' : bid.status,
-                    'bid_price' : bid.bid_price,
+                    'bid_withdrawn' : bid.withdraw,
+                    'bid_price' : bid.per_unit_bid_price,
                     'no_of_units' : bid.no_of_units,
                     'updated_at' : bid.updated_at,
                     'type': 'bidded'
@@ -894,7 +921,7 @@ def GetSellPurchaseDetailsAPI(request, user):
                 # not posted for sale
                 buyer_units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer,post_for_saleID__isnull=True)
                 buyer_units_count = buyer_units.count()
-                print("buyer_units_count : ",buyer_units_count)
+                # print("buyer_units_count : ",buyer_units_count)
                 if buyer_units_count > 0:
                     brought_invoice = buyer_units.first().unitID.invoice 
                     invoice_data = {
@@ -915,28 +942,27 @@ def GetSellPurchaseDetailsAPI(request, user):
                         'Invoice_expiration_time': brought_invoice.expiration_time,
                         'isAdmin': buyer.user_id.user.is_admin,
                         'Buyer_user_id': buyer.user_id.id,
-                        'Bid_price' : 123,
                         'type': 'Brought'
                     }
                     invoice_data_list.append(invoice_data)
 
-                print("invoice_data_list : ",invoice_data_list)
+                # print("invoice_data_list : ",invoice_data_list)
                 
                 # posted for sale
                 buyer_units_posted_for_sale = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer, post_for_saleID__isnull=False)
-                print("buyer_units_posted_for_sale.count() :",buyer_units_posted_for_sale.count())
+                # print("buyer_units_posted_for_sale.count() :",buyer_units_posted_for_sale.count())
                 buyer_units_posted_for_sale_count = buyer_units_posted_for_sale.count()
                 if buyer_units_posted_for_sale_count > 0:
-                    print("bjcvdsuj")
+                    # print("bjcvdsuj")
                     # Group the units by post_for_saleID
                     units_by_post_for_sale = defaultdict(list)
                     for unit in buyer_units_posted_for_sale:
                         units_by_post_for_sale[unit.post_for_saleID].append(unit)
-                    print("post_invoice")
+                    # print("post_invoice")
                     first_unit = buyer_units_posted_for_sale.first()
                     if first_unit:
                         post_invoice = first_unit.unitID.invoice
-                        print("post_invoice:", post_invoice)
+                        # print("post_invoice:", post_invoice)
 
                         # Iterate through each group
                         for post_for_saleID, units in units_by_post_for_sale.items():
@@ -959,6 +985,7 @@ def GetSellPurchaseDetailsAPI(request, user):
                                     'Posted_type' : post_for_sale.type,
                                     'Posted_no_of_bid' : post_for_sale.no_of_bid,
                                     'Posted_open_for_bid' : post_for_sale.open_for_bid,
+                                    'Posted_withdraw' : post_for_sale.withdrawn,
                                     'Invoice_name': post_invoice.product_name,
                                     'Buyer_Purchased_date': buyer.purchase_date,
                                     'Buyer_Purchased_time': buyer.purchase_time,
@@ -970,6 +997,31 @@ def GetSellPurchaseDetailsAPI(request, user):
                                     'isAdmin': buyer.user_id.user.is_admin,
                                     'type': 'PostedForSale'
                                 }
+                                if post_for_sale.type == "Bidding" and post_for_sale.withdrawn == False:
+                                    print("post_for_sale ",post_for_sale.id)
+                                    print("post_for_sale.withdraw",post_for_sale.withdrawn)
+                                    bids = models.User_Bid.objects.filter(posted_for_sale_id=post_for_sale)
+                                    print("bids.count()",bids.count())
+                                    if bids.count() != 0:
+                                        bid_details = []
+                                        for bid in bids:
+                                            print("bid.id ",bid.id)
+                                            bid_detail = {
+                                                'bid_id': bid.id,
+                                                'user_id': bid.user_id.id,
+                                                'bid_price': bid.per_unit_bid_price,
+                                                'no_of_units': bid.no_of_units,
+                                                'withdraw' : bid.withdraw,
+                                                'status': bid.status,
+                                                'created_at': bid.datetime,
+                                            }
+                                            bid_details.append(bid_detail)
+
+                                            highest_bid = bids.aggregate(Max('per_unit_bid_price'))['per_unit_bid_price__max'] if bids else None
+
+                                        invoice_data['bids'] = bid_details
+                                        invoice_data['highest_bid'] = highest_bid
+
                                 invoice_data_list.append(invoice_data)
                 else :
                     print("dnkesbnzfvk")
@@ -1135,7 +1187,93 @@ def TobuyAPI(request):
 
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-    
+
+@csrf_exempt
+def checkBalanceAgainstBidPrice(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            userRoleID = data.get('user')
+            bid_price = data.get('bid_price')
+
+            if not all([userRoleID, bid_price]):
+                return JsonResponse({"message": "All fields are required","user":user_role.id}, status=400)
+
+            try:
+                user_role = models.UserRole.objects.get(id=userRoleID)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found","user":user_role.id}, status=400)
+            try:
+                wallet = models.Wallet.objects.get(user_role=user_role)
+            except models.BankAccountDetails.DoesNotExist:
+                return JsonResponse({"message": " Wallet not found for the given user","user":user_role.id}, status=400)
+            
+            if wallet.OutstandingBalance < bid_price:
+                return JsonResponse({"message":"Insufficient balance to bid","user":user_role.id},status=400)
+            
+            return JsonResponse({"message":"Can bid","user":user_role.id},status=200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+
+@csrf_exempt
+def proceedToBid(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            userRoleID = data.get('user')
+            per_unit_bid_price = data.get('per_unit_bid_price')
+            no_of_units = data.get('no_of_units')
+            postForSaleID = data.get('postForSaleID')
+
+            if not all([userRoleID, per_unit_bid_price , no_of_units , postForSaleID]):
+                return JsonResponse({"message": "All fields are required"}, status=400)
+
+            try:
+                user_role = models.UserRole.objects.get(id=userRoleID)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found","user":user_role.id}, status=400)
+            
+            try:
+               postForSale = models.Post_for_sale.objects.get(id=postForSaleID)
+            except models.Post_for_sale.DoesNotExist:
+                return JsonResponse({"message": "postForSaleID not found","user":user_role.id}, status=400) 
+            
+            if no_of_units > postForSale.remaining_units:
+                return JsonResponse({"message": f"Not enough units available. You can bid for up to {postForSale.remaining_units} units."}, status=400)
+            
+            total_bid_price = no_of_units * per_unit_bid_price
+
+            user_wallet = models.Wallet.objects.get(user_role=user_role) 
+
+            if user_wallet.OutstandingBalance < total_bid_price:
+                return JsonResponse({"message": f"Insufficient balance. You need {total_bid_price} to place this bid, but your balance is {user_wallet.balance}.","user":user_role.id}, status=400)
+            
+            with transaction.atomic():
+                user_bid = models.User_Bid.objects.create(
+                    posted_for_sale_id=postForSale,
+                    status='awaiting_acceptance',
+                    user_id=user_role,
+                    per_unit_bid_price=per_unit_bid_price,
+                    no_of_units=no_of_units,
+                    updated_at = timezone.now(),
+                    datetime = timezone.now()
+                )
+                postForSale.no_of_bid += 1
+                postForSale.save()
+
+            return JsonResponse({
+                "message": "Bid placed successfully",
+                "user_bid_id": user_bid.id,
+                "user" : user_role.id
+            }, status=200)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+        
 @csrf_exempt
 def ToSellAPI(request):
     if request.method == 'POST':
@@ -1179,10 +1317,11 @@ def ToSellAPI(request):
                     open_to_bid = False
                 elif type_of_sell == "BIDDABLE":
                     open_to_bid = True
-                    type = "Bidding"
+                    bid_type = "Bidding"
                 else :
                     return JsonResponse({"message": "type_of_sell should be FIXED or BIDDABLE"}, status=400)
-
+                
+                print("bid_type ",bid_type)
                 post_for_sale = models.Post_for_sale.objects.create(
                     no_of_units = no_of_units ,
                     per_unit_price = per_unit_price ,
@@ -1196,7 +1335,7 @@ def ToSellAPI(request):
                     from_date = from_date ,
                     to_date = to_date ,
                     sold = False ,
-                    type = type,
+                    type = bid_type,
                     no_of_bid = 0 ,
                     open_for_bid = open_to_bid ,
                     post_dateTime = timezone.now() ,
@@ -1222,6 +1361,332 @@ def ToSellAPI(request):
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @csrf_exempt
+def AcceptBidAPI(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            userRoleID = data.get('user')
+            userBidID = data.get('userBidID')
+
+            if not all([userRoleID , userBidID]):
+                    return JsonResponse({"message": "All fields are required"}, status=400)
+            
+            try:
+                user_role = models.UserRole.objects.get(id=userRoleID)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found","user":user_role.id}, status=400)
+            
+            try:
+                user_bid = models.User_Bid.objects.get(id=userBidID)
+            except models.User_Bid.DoesNotExist:
+                return JsonResponse({"message": "User bid id not found","user":user_role.id}, status=400)
+            
+            if user_bid.status != 'awaiting_acceptance':
+                return JsonResponse({"message": "Bid is already closed or accepted"}, status=400)
+            print("xyz")
+            with transaction.atomic():
+                post_for_sale = user_bid.posted_for_sale_id
+
+                post_for_sale.remaining_units -= user_bid.no_of_units
+                if post_for_sale.remaining_units == 0:
+                    post_for_sale.sold = True
+                    post_for_sale.open_for_bid = False
+                post_for_sale.save()
+
+                units_to_transfer = models.Post_For_Sale_UnitTracker.objects.filter(
+                    post_for_saleID=post_for_sale, unitID__posted_for_sale=True , sellersID__isnull=True
+                )[:user_bid.no_of_units]
+                print("units_to_transfer.count()",units_to_transfer.count())
+                if units_to_transfer.count() < user_bid.no_of_units:
+                    return JsonResponse({"message":"No enough units"},status=400)
+                
+                buyer_id = user_bid.user_id
+                try :
+                    buyer_wallet = models.Wallet.objects.get(user_role=buyer_id)
+                except models.Wallet.DoesNotExist:
+                    return JsonResponse({"message":"buyer wallet doesn't exist"},status=400)
+                
+                seller_id = post_for_sale.user_id
+                try :
+                    seller_wallet = models.Wallet.objects.get(user_role=seller_id)
+                except models.Wallet.DoesNotExist:
+                    return JsonResponse({"message":"seller wallet doesn't exist"},status=400)
+                
+                buyer_entry = models.Buyers.objects.create(
+                    user_id=user_bid.user_id,
+                    no_of_units=user_bid.no_of_units,
+                    per_unit_price_invested=user_bid.per_unit_bid_price,
+                    wallet=buyer_wallet,
+                    purchase_date=timezone.now().date(),
+                    purchase_time =timezone.now().time(),
+                    purchase_date_time = timezone.now()
+                )
+
+                sale_entry = models.Sales.objects.create(
+                        UserID=post_for_sale.user_id,
+                        Invoice=post_for_sale.invoice_id,
+                        no_of_units=user_bid.no_of_units
+                    )
+
+                for unit in units_to_transfer:
+                    unit.unitID.current_owner = user_bid.user_id
+                    unit.unitID.save()
+                    
+                    models.Buyer_UnitsTracker.objects.create(
+                        buyer_id=buyer_entry,
+                        unitID=unit.unitID
+                    )
+
+                    models.Sales_UnitTracker.objects.create(
+                        unitID=unit.unitID,
+                        sellersID=sale_entry
+                    )
+
+                    models.SalePurchaseReport.objects.create(
+                        invoiceID=post_for_sale.invoice_id,
+                        unitID=unit.unitID,  
+                        seller_ID=post_for_sale.user_id,
+                        buyerID_ID=user_bid.user_id,
+                        Sale_Buy_Date=timezone.now().date(),
+                        Sale_Buy_per_unit_price=user_bid.per_unit_bid_price,
+                        ListingDate=post_for_sale.post_date,
+                        transfer_date=timezone.now().date(),
+                        no_of_days_units_held=(timezone.now().date() - post_for_sale.post_date).days,
+                        interest_due_to_seller=0, 
+                        TDS_deducted=0,  
+                        IRR=0  
+                    )
+
+                user_bid.status = 'closed'
+                user_bid.save()
+                models.User_Bid.objects.filter(posted_for_sale_id=post_for_sale, status='awaiting_acceptance').update(status='closed')
+                
+                total_amount = user_bid.no_of_units * user_bid.per_unit_bid_price
+
+                if buyer_wallet.OutstandingBalance < total_amount:
+                    return JsonResponse({"message": "Insufficient wallet balance"}, status=400)
+                
+                buyer_wallet.OutstandingBalance -= total_amount
+                seller_wallet.OutstandingBalance += total_amount
+                buyer_wallet.save()
+                seller_wallet.save()
+
+                models.WalletTransaction.objects.create(
+                    wallet=buyer_wallet,
+                    type='buy',
+                    debitedAmount=total_amount,
+                    status='response',
+                    source='wallet_to_buy',
+                    purpose='Bid Acceptance',
+                    time_date=timezone.now()
+                )
+
+                models.WalletTransaction.objects.create(
+                    wallet=seller_wallet,
+                    type='sell',
+                    creditedAmount=total_amount,
+                    status='response',
+                    source='sell_to_wallet',
+                    purpose='Bid Acceptance',
+                    time_date=timezone.now()
+                )
+
+                return JsonResponse({"user": user_role.id, "message": "Bid accepted successfully and updated"}, status=200)
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
+    
+@csrf_exempt
+def withdrawBid(request):
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            userRoleID = data.get('user')
+            type = data.get("type")
+
+            if not all([userRoleID , type]):
+                    return JsonResponse({"message": "All fields are required"}, status=400)
+            
+            try:
+                user_role = models.UserRole.objects.get(id=userRoleID)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found"}, status=400)
+
+            if type == "SELLER" : 
+                postedForSaleID = data.get('postedForSaleID')
+                if not all([postedForSaleID]):
+                    return JsonResponse({"message": "All fields are required"}, status=400)
+                
+                try:
+                    postedForSale = models.Post_for_sale.objects.get(id=postedForSaleID)
+                except models.Post_for_sale.DoesNotExist:
+                    return JsonResponse({"message": "postedForSale not found"}, status=400)
+                
+                if postedForSale.type != "Bidding":
+                    return JsonResponse({"message": "Only Biddable invoice can withdraw"}, status=403)
+                
+                active_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='awaiting_acceptance').exists()
+                if active_bids:
+                    return JsonResponse({"message": "Cannot modify post with active bids"}, status=403)
+                
+                expired_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='expired').exists()
+                if expired_bids:
+                    return JsonResponse({"message": "Cannot modify post with expired bids"}, status=403)
+                
+                if postedForSale.user_id != user_role:
+                    return JsonResponse({"message": "chech user id "}, status=400)
+                
+                with transaction.atomic():
+                    postedForSale.withdrawn = True
+                    postedForSale.open_for_bid = False
+                    postedForSale.save()
+                    return JsonResponse({"message": "Successfully withdrawn the post for sale","user":user_role.id,"postedForSaleID":postedForSale.id}, status=200)
+            
+            elif type == "BIDDER" :
+                userbidID = data.get('userbidID')
+                if not all([userbidID]):
+                    return JsonResponse({"message": "All fields are required"}, status=400)
+                
+                try:
+                    userbid = models.User_Bid.objects.get(id=userbidID)
+                except models.User_Bid.DoesNotExist:
+                    return JsonResponse({"message": "user bid ID not found"}, status=400)
+                
+                postedForSale = userbid.posted_for_sale_id
+
+                expired_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='expired').exists()
+                if expired_bids:
+                    return JsonResponse({"message": "Cannot modify post with expired bids"}, status=403)
+                
+                closed_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='closed').exists()
+                if closed_bids:
+                    return JsonResponse({"message": "Cannot modify post with closed bids"}, status=403)
+                
+                with transaction.atomic():
+                    userbid.withdraw = True
+                    userbid.save()
+                    return JsonResponse({"message": "Successfully withdrawn the bid","user":user_role.id}, status=200)
+            
+            else :
+                return JsonResponse({"message":"type should be SELLER or BIDDER","user":user_role.id},status=400)
+      
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only PUT method is allowed"}, status=405)
+    
+# updated_at post for sale table upadate
+@csrf_exempt
+def ModifyBidAPI(request):
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            userRoleID = data.get('user')
+            per_unit_price = data.get('per_unit_price')
+            no_of_units = data.get('no_of_units')
+            type = data.get('type')
+
+            if not all([userRoleID , per_unit_price , no_of_units,type]):
+                return JsonResponse({"message": "All fields are required"}, status=400)
+
+            try:
+                user_role = models.UserRole.objects.get(id=userRoleID)
+            except models.UserRole.DoesNotExist:
+                return JsonResponse({"message": "User role not found"}, status=400)
+            
+            if type == "SELLER" :
+                buyerID = data.get('buyerID')
+                postedForSaleID = data.get('postedForSaleID')
+
+                if not all([buyerID , postedForSaleID ]):
+                    return JsonResponse({"message": "All fields are required"}, status=400)
+                
+                try:
+                    postedForSale = models.Post_for_sale.objects.get(id=postedForSaleID)
+                except models.Post_for_sale.DoesNotExist:
+                    return JsonResponse({"message": "postedforsaleID not found"}, status=400)
+        
+                try:
+                    buyer = models.Buyers.objects.get(id=buyerID)
+                except models.Buyers.DoesNotExist:
+                    return JsonResponse({"message": "Buyer not found"}, status=400)
+                
+                try :
+                    buyer_Units = models.Buyer_UnitsTracker.objects.filter(buyer_id=buyer , post_for_saleID = postedForSale).order_by('id')[:no_of_units]
+                except models.Buyer_UnitsTracker.DoesNotExist:
+                        return JsonResponse({"message" : "buyer unit does not exits or Not sufficient units for post for sale"},status=400)
+                    
+                if buyer_Units.count() < no_of_units:
+                        return JsonResponse({"message": f"Not enough units available for selling , You can bid up to {buyer_Units.count()} units only."}, status=400)
+                
+                if postedForSale.type != "Bidding":
+                    return JsonResponse({"message": "Only Biddable invoice can modify"}, status=403)
+                
+                if postedForSale.withdrawn == True:
+                    return JsonResponse({"message": "Only non - withdraw invoice can modify"}, status=403)
+                
+                active_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='awaiting_acceptance').exists()
+                if active_bids:
+                    return JsonResponse({"message": "Cannot modify post with active bids"}, status=403)
+                
+                expired_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='expired').exists()
+                if expired_bids:
+                    return JsonResponse({"message": "Cannot modify post with expired bids"}, status=403)
+                
+                with transaction.atomic():
+                    if postedForSale.user_id != user_role:
+                        return JsonResponse({"message": "chech user id "}, status=400)
+                    
+                    postedForSale.per_unit_price = per_unit_price
+                    postedForSale.no_of_units = no_of_units
+                    postedForSale.remaining_units = no_of_units
+                    postedForSale.total_price = per_unit_price * no_of_units
+                    postedForSale.save()
+                    return JsonResponse({"message": "Successfully updated the post for sale","user":user_role.id,"postedForSaleID":postedForSale.id}, status=200)
+                
+            elif type == "BIDDER" :
+                userBidID = data.get('userBidID')
+
+                if not all([userBidID]):
+                    return JsonResponse({"message": "userBidID are required"}, status=400)
+
+                try:
+                    userBid = models.User_Bid.objects.get(id=userBidID)
+                except models.User_Bid.DoesNotExist:
+                    return JsonResponse({"message": "User Bid ID not found"}, status=400)
+                
+                postedForSale = userBid.posted_for_sale_id
+                
+                if userBid.posted_for_sale_id.no_of_units < no_of_units :
+                    return JsonResponse({"message ",f"You can bid upto {userBid.posted_for_sale_id.no_of_bid}"},status=400)
+                
+                if postedForSale.withdrawn == True:
+                    return JsonResponse({"message": "Only non - withdraw invoice can modify"}, status=403)
+                
+                funded_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='closed').exists()
+                if funded_bids:
+                    return JsonResponse({"message": "Cannot modify post with closed bids"}, status=403)
+                
+                expired_bids = models.User_Bid.objects.filter(posted_for_sale_id=postedForSale, status='expired').exists()
+                if expired_bids:
+                    return JsonResponse({"message": "Cannot modify post with expired bids"}, status=403)
+                
+                with transaction.atomic():
+                    userBid.no_of_units = no_of_units
+                    userBid.per_unit_bid_price = per_unit_price
+                    userBid.updated_at = timezone.now()
+                    userBid.save()
+                    return JsonResponse({"message": "Successfully updated the bid","user":user_role.id,"userBidID":userBid.id}, status=200)
+            else :
+                return JsonResponse({"message":"type should be SELLER or BIDDER","user":user_role.id},status=400)
+
+        except Exception as e:
+            return JsonResponse({"message": str(e)}, status=500)
+    else:
+        return JsonResponse({"message": "Only PUT method is allowed"}, status=405)
+    
+@csrf_exempt
 def create_entry(request):
     if request.method == 'POST':
         try:
@@ -1244,43 +1709,7 @@ def create_entry(request):
             return JsonResponse({"message": str(e)}, status=500)
     else:
         return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-
-@csrf_exempt
-def checkBalanceAgainstBidPrice(request):
-    if request.method == 'POST':
-        try:
-            # in json userID , bid price will be given 
-            #  check against balance 
-            return JsonResponse({"user":1,"balance_available":True},status = 200)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-
-@csrf_exempt
-def proceedToBid(request):
-    if request.method == 'POST':
-        try:
-            # in json userID , bid price , post_for_sale_ID will be given 
-            # record this bid in database 
-            return JsonResponse({"user":1,"message":"successfully done bidding"},status = 200)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)
-
-@csrf_exempt
-def withdrawBid(request):
-    if request.method == 'POST':
-        try:
-            # in json userID , BID_ID will be given 
-            return JsonResponse({"user":1,"message":"successfully withdraw bid"},status = 200)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-    else:
-        return JsonResponse({"message": "Only POST method is allowed"}, status=405)    
-
-    
+        
 @csrf_exempt
 def cashFlowAPI(request,invoiceID):
     if request.method == 'GET':

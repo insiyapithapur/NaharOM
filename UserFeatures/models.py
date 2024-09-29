@@ -240,8 +240,9 @@ class User_Bid(models.Model):
     posted_for_sale_id = models.ForeignKey(Post_for_sale, on_delete=models.CASCADE)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='bid_open')
     user_id = models.ForeignKey(UserRole, on_delete=models.CASCADE)
-    bid_price = models.FloatField()
+    per_unit_bid_price = models.FloatField()
     no_of_units = models.IntegerField()
+    withdraw = models.BooleanField(default=False)
     updated_at = models.DateTimeField(default=timezone.now())
     datetime = models.DateTimeField(default=timezone.now())
 

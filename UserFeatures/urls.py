@@ -20,6 +20,8 @@ urlpatterns = [
     path('PostForSell/',views.ToSellAPI), #sell_to_wallet #DONE
     path('checkBalanceAgainstBidPrice/',views.checkBalanceAgainstBidPrice),
     path('proceedToBid/',views.proceedToBid),
+    path('modifyBid/',views.ModifyBidAPI),
     path('withdrawBid/',views.withdrawBid),
+    path('acceptBid/',views.AcceptBidAPI),
     path('cashFlow/<int:invoiceID>/',views.cashFlowAPI)
 ]
