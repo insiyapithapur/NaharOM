@@ -236,6 +236,7 @@ class User_Bid(models.Model):
         ('awaiting_acceptance', 'Awaiting Acceptance'),
         ('closed', 'Closed'),
         ('expired', 'Expired'),
+        ('Accepted','Accepted')
     ]
     posted_for_sale_id = models.ForeignKey(Post_for_sale, on_delete=models.CASCADE)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='bid_open')

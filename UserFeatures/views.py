@@ -907,11 +907,11 @@ def GetSellPurchaseDetailsAPI(request, user):
                     'Invoice_type' : bid.posted_for_sale_id.type,
                     'Invoice_no_of_bid' : bid.posted_for_sale_id.no_of_bid,
                     'open_for_bid' : bid.posted_for_sale_id.open_for_bid,
-                    'status' : bid.status,
-                    'bid_withdrawn' : bid.withdraw,
-                    'bid_price' : bid.per_unit_bid_price,
-                    'no_of_units' : bid.no_of_units,
-                    'updated_at' : bid.updated_at,
+                    'bid_status' : bid.status,
+                    'bid_withdrawn_by_bidder' : bid.withdraw,
+                    'bid_price_by_bidder' : bid.per_unit_bid_price,
+                    'no_of_units_by_bidder' : bid.no_of_units,
+                    'updated_at_by_bidder' : bid.updated_at,
                     'type': 'bidded'
                 }
                 invoice_data_list.append(bidded_data)
@@ -1457,7 +1457,7 @@ def AcceptBidAPI(request):
                         IRR=0  
                     )
 
-                user_bid.status = 'closed'
+                user_bid.status = 'Accepted'
                 user_bid.save()
                 models.User_Bid.objects.filter(posted_for_sale_id=post_for_sale, status='awaiting_acceptance').update(status='closed')
                 
