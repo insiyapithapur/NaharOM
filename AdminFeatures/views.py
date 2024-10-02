@@ -567,22 +567,29 @@ def SalesPurchasedReportAPI(request,user):
 
                         report_data = {
                             "id": report.id,
-                            "invoiceID" : report.invoiceID.invoice_id,
-                            "unitID" : report.unitID.fractional_unit_id,
-                            "Listing_Date" : report.ListingDate,
-                            "Seller_ID" : report.seller_ID.id,
+                            "PurchaserID" : report.buyerID_ID.id,
+                            "FractionalID" : report.unitID.fractional_unit_id,
+                            "Listing_Date": report.ListingDate,
                             "Seller_Name" : Seller_Name,
                             "Seller_PAN" : Seller_PAN,
+                            "Seller_ID" : report.seller_ID.id,
                             "Sale_Buy_Date" : report.Sale_Buy_Date,
                             "Sale_Buy_per_unit_price" : report.Sale_Buy_per_unit_price,
                             "Buyer_ID" : report.buyerID_ID.id,
                             "Buyer_Name" : Buyer_Name,
                             "Buyer_PAN" : Buyer_PAN,
-                            "transfer_date" : "2024-08-01",
+                            "transfer_date" : "After cashflow",
                             "no_of_days_units_held" : report.no_of_days_units_held,
                             "interest_due_to_seller" : report.interest_due_to_seller,
-                            "TDS_deducted" : report.TDS_deducted,
-                            "IRR" : report.IRR  
+                            "interest_due_to_buyer" : report.interest_due_to_seller,
+                            "Next_interest_due_to_buyer" : report.interest_due_to_seller,
+                            "Monthly_interest_due_to_buyer": report.interest_due_to_seller,
+                            "TDS_deducted_for_seller" : report.TDS_deducted,
+                            "TDS_deducted_for_next_instalment":report.TDS_deducted,
+                            "Coupan_Rate": "need to ask",
+                            "XIRR_Buyer":report.IRR,
+                            "XIRR_Seller":report.IRR,
+                            "Contract_PDF" : "not need now" 
                         }
                         report_list.append(report_data)
                     return JsonResponse({"sales_purchase_reports": report_list ,"user":user_role.id}, status=200)
@@ -664,12 +671,65 @@ def BidReportAPI(request,user):
                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
             
             with transaction.atomic():
-                try:
-                    with open('BidReport.json', 'r') as file:
-                        bid_report_data = json.load(file)
-                except FileNotFoundError:
-                    return JsonResponse({"message": "Bid report file not found"}, status=404)
-                return JsonResponse(bid_report_data, safe=False, status=200)
+                bids_report = models.BidReport.objects.all()
+                report_list = []
+                for report in bids_report:
+                        if report.post_for_saleID.user_id.role == 'Individual' :
+                            try :
+                                seller_profile = models.IndividualDetails.objects.get(user_role=report.post_for_saleID.user_id)
+                                Seller_Name = seller_profile.first_name
+                            except models.IndividualDetails.DoesNotExist:
+                                Seller_Name = None
+                        else :
+                            try :
+                                seller_profile = models.CompanyDetails.objects.get(user_role=report.post_for_saleID.user_id)
+                                Seller_Name = seller_profile.company_name
+                            except models.CompanyDetails.DoesNotExist:
+                                Seller_Name = None
+                        
+                        if report.user_BidID.user_id.role == 'Individual' :
+                            try :
+                                buyer_profile = models.IndividualDetails.objects.get(user_role=report.user_BidID.user_id)
+                                Buyer_Name = buyer_profile.first_name
+                            except models.IndividualDetails.DoesNotExist:
+                                Buyer_Name = None
+                        else :
+                            try :
+                                buyer_profile = models.CompanyDetails.objects.get(user_role=report.user_BidID.user_id)
+                                Buyer_Name = buyer_profile.company_name
+                            except models.CompanyDetails.DoesNotExist:
+                                Buyer_Name = None
+
+                        try :
+                            seller_pancard = models.PanCardNos.objects.get(user_role=report.post_for_saleID.user_id)
+                            Seller_PAN = seller_pancard.pan_card_no
+                        except models.PanCardNos.DoesNotExist:
+                            Seller_PAN = None
+                        
+                        try :
+                            buyer_pancard = models.PanCardNos.objects.get(user_role=report.user_BidID.user_id)
+                            Buyer_PAN = buyer_pancard.pan_card_no
+                        except models.PanCardNos.DoesNotExist:
+                            Buyer_PAN = seller_profile.first_name
+
+                        report_data = {
+                            "id": report.id,
+                            "PurchaserID" : report.user_BidID.user_id.id,
+                            "FractionalID" : report.unitID.fractional_unit_id,
+                            "Listing_Date": report.ListingDate,
+                            "Seller_Name" : Seller_Name,
+                            "Seller_PAN" : Seller_PAN,
+                            "Seller_ID" : report.post_for_saleID.user_id.id,
+                            "Open_to_Bid_Date" :report.post_for_saleID.post_dateTime,
+                            "Bidding_base_price" : report.post_for_saleID.per_unit_price,
+                            "Buyer_Bid" : report.user_BidID.per_unit_bid_price,
+                            "Buyer_Bid_date":report.user_BidID.datetime,
+                            "Buyer_ID" : report.user_BidID.user_id.id,
+                            "Buyer_Name" : Buyer_Name,
+                            "Buyer_PAN" : Buyer_PAN
+                        }
+                        report_list.append(report_data)
+                return JsonResponse({"Bid_Report": report_list ,"user":user_role.id}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:
@@ -693,12 +753,60 @@ def TradingActivityReportAPI(request , user):
                 return JsonResponse({"message": "For this operation you have to register yourself with admin role"}, status=403)
             
             with transaction.atomic():
-                try:
-                    with open('TradingActivityReport.json', 'r') as file:
-                        TradingActivityReport_data = json.load(file)
-                except FileNotFoundError:
-                    return JsonResponse({"message": "Trading Activity Report file not found"}, status=404)
-                return JsonResponse(TradingActivityReport_data, safe=False, status=200)
+                active_bids = models.Post_for_sale.objects.filter(type="Bidding",open_for_bid=True,withdrawn=False,sold=False)
+                report_list = []
+                for active_bid in active_bids:
+                    if active_bid.user_id.role == 'Individual' :
+                        try :
+                            seller_profile = models.IndividualDetails.objects.get(user_role=active_bid.user_id)
+                            Seller_Name = seller_profile.first_name
+                        except models.IndividualDetails.DoesNotExist:
+                            Seller_Name = None
+                    else :
+                        try :
+                            seller_profile = models.CompanyDetails.objects.get(user_role=active_bid.user_id)
+                            Seller_Name = seller_profile.company_name
+                        except models.CompanyDetails.DoesNotExist:
+                            Seller_Name = None
+                    user_bids = models.User_Bid.objects.filter(posted_for_sale_id=active_bid.id)
+                    bids_history = []
+                    for bid in user_bids:
+                        buyer_name = None
+                        if bid.user_id.role == 'Individual':
+                            try:
+                                buyer_profile = models.IndividualDetails.objects.get(user_role=bid.user_id)
+                                buyer_name = buyer_profile.first_name
+                            except models.IndividualDetails.DoesNotExist:
+                                buyer_name = None
+                        else:
+                            try:
+                                buyer_profile = models.CompanyDetails.objects.get(user_role=bid.user_id)
+                                buyer_name = buyer_profile.company_name
+                            except models.CompanyDetails.DoesNotExist:
+                                buyer_name = None
+
+                        # Collect each bid's information
+                        bid_data = {
+                            "PurchaserID": bid.user_id.id,
+                            "Bid_withdrawn": bid.withdraw,
+                            "Bid_modified": bid.updated_at,
+                            "Date_of_Bid": bid.datetime,
+                            "Name_of_Buyer": buyer_name,
+                            "Per_unit_bid_price": bid.per_unit_bid_price,
+                            "Number_of_units": bid.no_of_units,
+                            "Status": bid.status
+                        }
+                        bids_history.append(bid_data)
+                    report_data = {
+                        "id": active_bid.id,
+                        "Fractional_Ids": active_bid.no_of_units,
+                        "Name_of_Seller": Seller_Name,
+                        "Listed_per_unit_price": active_bid.per_unit_price,
+                        "Bids_made": active_bid.no_of_bid,
+                        "Bids_history": bids_history
+                    }
+                    report_list.append(report_data)
+                return JsonResponse({"Trading_Activity_Report": report_list ,"user":user_role.id}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({"message": "Invalid JSON"}, status=400)
         except Exception as e:

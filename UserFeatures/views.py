@@ -1442,19 +1442,12 @@ def AcceptBidAPI(request):
                         sellersID=sale_entry
                     )
 
-                    models.SalePurchaseReport.objects.create(
-                        invoiceID=post_for_sale.invoice_id,
-                        unitID=unit.unitID,  
-                        seller_ID=post_for_sale.user_id,
-                        buyerID_ID=user_bid.user_id,
-                        Sale_Buy_Date=timezone.now().date(),
-                        Sale_Buy_per_unit_price=user_bid.per_unit_bid_price,
-                        ListingDate=post_for_sale.post_date,
-                        transfer_date=timezone.now().date(),
-                        no_of_days_units_held=(timezone.now().date() - post_for_sale.post_date).days,
-                        interest_due_to_seller=0, 
-                        TDS_deducted=0,  
-                        IRR=0  
+                    models.BidReport.objects.create(
+                        unitID = unit.unitID,
+                        user_BidID = user_bid.user_id,
+                        post_for_saleID = unit.post_for_saleID,
+                        ListingDate = timezone.now().date(),
+                        created_at = timezone.now()
                     )
 
                 user_bid.status = 'Accepted'

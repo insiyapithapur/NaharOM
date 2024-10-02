@@ -292,6 +292,13 @@ class SalePurchaseReport(models.Model):
     TDS_deducted = models.FloatField()
     IRR = models.FloatField()
 
+class BidReport(models.Model):
+    unitID = models.ForeignKey(FractionalUnits,on_delete=models.CASCADE)
+    user_BidID = models.ForeignKey(User_Bid,on_delete=models.CASCADE)
+    ListingDate = models.DateField(default=timezone.now().date())
+    post_for_saleID = models.ForeignKey(Post_for_sale,on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now())
+
 # class TDSReport(models.Model):
 #     PurchaserID = models.ForeignKey(UserRole,on_delete=models.CASCADE , related_name='buyerID')
 #     Name_of_the_Co" : "None",
