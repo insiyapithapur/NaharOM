@@ -785,7 +785,6 @@ def TradingActivityReportAPI(request , user):
                             except models.CompanyDetails.DoesNotExist:
                                 buyer_name = None
 
-                        # Collect each bid's information
                         bid_data = {
                             "PurchaserID": bid.user_id.id,
                             "Bid_withdrawn": bid.withdraw,

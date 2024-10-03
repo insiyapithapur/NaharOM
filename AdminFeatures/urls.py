@@ -13,7 +13,7 @@ urlpatterns = [
     path('configurations/',views.ConfigurationAPI), #DONE
     # used to post invoice that admin want to
     path('PostInvoice/',views.PostInvoiceAPI), #DONE
-    path('UserManagement/<int:user>',views.UserManagementAPI), #DONE
+    path('OnboardingReport/<int:user>',views.UserManagementAPI), #DONE
     path('transactionReport/<int:user>',views.usersLedgerAPI),
     path('SalesPurchasedReport/<int:user>',views.SalesPurchasedReportAPI),
     path('TdsReport/<int:user>',views.TdsReportAPI),

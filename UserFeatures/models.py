@@ -4,6 +4,9 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser , BaseUserManager , PermissionsMixin
 from django.utils.translation import gettext_lazy as _
+import string
+import random
+from django.db import models, transaction
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, mobile, password=None, **extra_fields):
@@ -45,16 +48,41 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.mobile})"
-
+    
 class UserRole(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=50 ,choices=[
+    role = models.CharField(max_length=50, choices=[
         ('company', 'Company'),
         ('individual', 'Individual')
     ])
+    user_role_id = models.CharField(max_length=8, unique=True, editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.user_role_id:
+            with transaction.atomic():
+                last_user_role = UserRole.objects.order_by('id').last()
+
+                if last_user_role:
+                    last_id = last_user_role.user_role_id
+                    last_char = last_id[1]  
+                    last_number = int(last_id[2:])  
+
+                    if last_number < 999999:
+                        new_number = last_number + 1
+                        new_user_role_id = f"U{last_char}{str(new_number).zfill(6)}"
+                    else:
+                        new_char = chr(ord(last_char) + 1) if last_char != 'Z' else 'A'
+                        new_user_role_id = f"U{new_char}000001"
+                else:
+                    new_user_role_id = "UA000001"
+
+                self.user_role_id = new_user_role_id
+
+        super(UserRole, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.mobile} - {self.role}"
+        return f"{self.user.mobile} - {self.role} - {self.user_role_id}"
+
 
 class CompanyDetails(models.Model):
     user_role = models.OneToOneField(UserRole, on_delete=models.CASCADE)
@@ -106,9 +134,9 @@ class Wallet(models.Model):
     updated_at = models.DateTimeField() 
 
 class Invoices(models.Model):
-    invoice_id = models.CharField(max_length=10,unique=True,editable=False)
+    invoice_id = models.CharField(max_length=10, unique=True, editable=False)
     primary_invoice_id = models.IntegerField(unique=True)
-    product_name = models.CharField()
+    product_name = models.CharField(max_length=100)
     principal_price = models.FloatField()
     interest = models.FloatField()
     xirr = models.FloatField()
@@ -120,14 +148,41 @@ class Invoices(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.invoice_id:
-            last_invoice = Invoices.objects.all().order_by('id').last()
-            if last_invoice:
-                last_id = int(last_invoice.invoice_id[1:])  # Extract the integer part of the last invoice_id
-                new_id = last_id + 1
+            with transaction.atomic():
+                last_invoice = Invoices.objects.all().order_by('id').last()
+                if last_invoice:
+                    last_id = last_invoice.invoice_id[2:]  
+                    prefix = last_invoice.invoice_id[:2]  
+                    
+                    if last_id.isdigit() and int(last_id) == 999999:
+                        prefix = self.increment_prefix(prefix)
+                        new_id = 1  
+                    else:
+                        new_id = int(last_id) + 1
+                else:
+                    prefix = "IA" 
+                    new_id = 1
+
+                self.invoice_id = f"{prefix}{new_id:06d}" 
+            
+            super(Invoices, self).save(*args, **kwargs)
+
+    def increment_prefix(self, prefix):
+        """
+        Increment the alphabetic prefix, cycling through letters like 'IA', 'IB', ..., 'IZ', 'JA', etc.
+        """
+        if not prefix:
+            return "AA"
+
+        prefix_chars = list(prefix)
+
+        for i in reversed(range(len(prefix_chars))):
+            if prefix_chars[i] != 'Z':
+                prefix_chars[i] = chr(ord(prefix_chars[i]) + 1)
+                break
             else:
-                new_id = 1
-            self.invoice_id = f"I{new_id}"
-        super(Invoices, self).save(*args, **kwargs)
+                prefix_chars[i] = 'A'
+        return "".join(prefix_chars)
 
     def __str__(self):
         return self.invoice_id
@@ -145,20 +200,25 @@ class FractionalUnits(models.Model):
     invoice = models.ForeignKey(Invoices, on_delete=models.CASCADE)
     current_owner = models.ForeignKey(UserRole, on_delete=models.CASCADE, null=True, blank=True)
     posted_for_sale = models.BooleanField(default=False)
-    configurationID = models.ForeignKey(Configurations,on_delete=models.CASCADE,null=True, blank=True)
+    configurationID = models.ForeignKey(Configurations, on_delete=models.CASCADE, null=True, blank=True)
     created_At = models.DateTimeField(default=timezone.now)
 
     def save(self, *args, **kwargs):
         if not self.fractional_unit_id:
-            last_unit = FractionalUnits.objects.filter(invoice=self.invoice).order_by('id').last()
-            if last_unit:
-                last_unit_id_str = last_unit.fractional_unit_id.split('-')[-1]
-                last_unit_id = int(last_unit_id_str)
-                new_unit_id = last_unit_id + 1
-            else:
-                new_unit_id = 1
-            self.fractional_unit_id = f"{self.invoice.invoice_id}-{new_unit_id}"
-        super(FractionalUnits, self).save(*args, **kwargs)
+            with transaction.atomic():
+                invoice_core = self.invoice.invoice_id[1:] 
+    
+                fractional_prefix = f"F{invoice_core}"
+                last_unit = FractionalUnits.objects.filter(invoice=self.invoice).order_by('id').last()
+                if last_unit:
+                    last_unit_id_str = last_unit.fractional_unit_id.split('-')[-1] 
+                    last_unit_id = int(last_unit_id_str)
+                    new_unit_id = last_unit_id + 1
+                else:
+                    new_unit_id = 1
+
+                self.fractional_unit_id = f"{fractional_prefix}-{new_unit_id}"   
+            super(FractionalUnits, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.fractional_unit_id
